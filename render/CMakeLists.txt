@@ -9,7 +9,7 @@ find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 
 find_package(PythonLibs REQUIRED)
-find_package(Boost 1.66.0 COMPONENTS filesystem python3 numpy3)
+find_package(Boost 1.65.0 COMPONENTS filesystem python3 numpy3)
 
 include_directories(${DART_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
@@ -19,4 +19,4 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 file(GLOB srcs "*.h" "*.cpp")
 add_executable(render ${srcs})
-target_link_libraries(render ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} GL GLU glut mss)
+target_link_libraries(render ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenGL_gl_LIBRARY} ${OpenGL_glu_LIBRARY} ${GLUT_LIBRARIES} mss)
