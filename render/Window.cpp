@@ -26,7 +26,7 @@ Window(Environment* env)
 	mm = p::import("__main__");
 	mns = mm.attr("__dict__");
 	sys_module = p::import("sys");
-	
+
 	p::str module_dir = (std::string(MASS_ROOT_DIR)+"/python").c_str();
 	sys_module.attr("path").attr("insert")(1, module_dir);
 	p::exec("import torch",mns);

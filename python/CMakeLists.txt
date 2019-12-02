@@ -27,6 +27,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${DART_INCLUDE_DIRS})
 
 
+if(APPLE)
+    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+endif(APPLE)
 
 add_library(pymss SHARED ${srcs})
 

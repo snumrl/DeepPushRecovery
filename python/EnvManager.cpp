@@ -7,7 +7,9 @@ EnvManager(std::string meta_file,int num_envs)
 	:mNumEnvs(num_envs)
 {
 	dart::math::seedRand();
+#ifdef _OPENMP
 	omp_set_num_threads(mNumEnvs);
+#endif
 	for(int i = 0;i<mNumEnvs;i++){
 		mEnvs.push_back(new MASS::Environment());
 		MASS::Environment* env = mEnvs.back();

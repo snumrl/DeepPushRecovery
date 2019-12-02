@@ -1,5 +1,6 @@
 #include "BVH.h"
 #include <iostream>
+#include <sstream>
 #include <Eigen/Geometry>
 #include "dart/dart.hpp"
 using namespace dart::dynamics;
@@ -245,6 +246,70 @@ Parse(const std::string& file,bool cyclic)
 
 
 }
+void
+BVH::
+ParseStr(const std::string& str,bool cyclic)
+{
+    mCyclic = cyclic;
+    std::stringstream is(str);
+
+    char buffer[256];
+
+    if(!is)
+    {
+        std::cout<<"Can't Open File"<<std::endl;
+        return;
+    }
+    while(is>>buffer)
+    {
+        if(!strcmp(buffer,"HIERARCHY"))
+        {
+            is>>buffer;//Root
+            is>>buffer;//Name
+            int c_offset = 0;
+            mRoot = ReadHierarchy(nullptr,buffer,c_offset,is);
+            mNumTotalChannels = c_offset;
+        }
+        else if(!strcmp(buffer,"MOTION"))
+        {
+            is>>buffer; //Frames:
+            is>>buffer; //num_frames
+            mNumTotalFrames = atoi(buffer);
+            is>>buffer; //Frame
+            is>>buffer; //Time:
+            is>>buffer; //time step
+            mTimeStep = atof(buffer);
+            mMotions.resize(mNumTotalFrames);
+            for(auto& m_t : mMotions)
+                m_t = Eigen::VectorXd::Zero(mNumTotalChannels);
+            double val;
+            for(int i=0;i<mNumTotalFrames;i++)
+            {
+                for(int j=0;j<mNumTotalChannels;j++)
+                {
+                    is>>val;
+                    mMotions[i][j]=val;
+                }
+            }
+        }
+    }
+
+    BodyNode* root = mSkeleton->getRootBodyNode();
+    std::string root_bvh_name = mBVHMap[root->getName()];
+    Eigen::VectorXd m = mMotions[0];
+
+    mMap[root_bvh_name]->Set(m);
+    T0.linear() = this->Get(root_bvh_name);
+    T0.translation() = 0.01*m.segment<3>(0);
+
+    m = mMotions[mNumTotalFrames-1];
+
+    mMap[root_bvh_name]->Set(m);
+    T1.linear() = this->Get(root_bvh_name);
+    T1.translation() = 0.01*m.segment<3>(0);
+
+
+}
 BVHNode*
 BVH::
 ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::ifstream& is)
@@ -305,6 +370,67 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::i
 	}
 	
 	return new_node;
+}
+BVHNode*
+BVH::
+ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::stringstream& is)
+{
+    char buffer[256];
+    double offset[3];
+    std::vector<std::string> c_name;
+
+    BVHNode* new_node = new BVHNode(name,parent);
+    mMap.insert(std::make_pair(name,new_node));
+
+    is>>buffer; //{
+
+    while(is>>buffer)
+    {
+        if(!strcmp(buffer,"}"))
+            break;
+        if(!strcmp(buffer,"OFFSET"))
+        {
+            //Ignore
+            double x,y,z;
+
+            is>>x;
+            is>>y;
+            is>>z;
+        }
+        else if(!strcmp(buffer,"CHANNELS"))
+        {
+
+            is>>buffer;
+            int n;
+            n= atoi(buffer);
+
+            for(int i=0;i<n;i++)
+            {
+                is>>buffer;
+                c_name.push_back(std::string(buffer));
+            }
+
+            new_node->SetChannel(channel_offset,c_name);
+
+
+
+            channel_offset+=n;
+        }
+        else if(!strcmp(buffer,"JOINT"))
+        {
+            is>>buffer;
+            BVHNode* child = ReadHierarchy(new_node,std::string(buffer),channel_offset,is);
+            new_node->AddChild(child);
+        }
+        else if(!strcmp(buffer,"End"))
+        {
+            is>>buffer;
+            BVHNode* child = ReadHierarchy(new_node,std::string("EndEffector"),channel_offset,is);
+            new_node->AddChild(child);
+        }
+    }
+
+    return new_node;
 }
 std::map<std::string,MASS::BVHNode::CHANNEL> BVHNode::CHANNEL_NAME =
 {

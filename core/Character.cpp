@@ -3,6 +3,7 @@
 #include "DARTHelper.h"
 #include "Muscle.h"
 #include <tinyxml.h>
+#include <cstdio>
 using namespace dart;
 using namespace dart::dynamics;
 using namespace MASS;
@@ -91,7 +92,36 @@ LoadBVH(const std::string& path,bool cyclic)
 		return;
 	}
 	mBVH->Parse(path,cyclic);
+	GenerateBvhForPushExp(0, 1., 1.);
 }
+
+void
+Character::
+GenerateBvhForPushExp(long crouch_angle, double step_length, double walk_speed)
+{
+    FILE *fp;
+    int state;
+
+
+    char buff[1024];
+    fp = popen((
+            std::string("python3 ")
+            +std::string(MASS_ROOT_DIR)+std::string("/core/python/BvhGenerator.py ")
+            + std::string(MASS_ROOT_DIR)+"/data/motion/walk.bvh 0 1. 1.").c_str(), "r");
+    if (fp == NULL)
+    {
+        perror("erro : ");
+        exit(0);
+    }
+
+    while(fgets(buff, 1024, fp) != NULL)
+    {
+        printf("%s", buff);
+    }
+
+    pclose(fp);
+}
+
 void
 Character::
 Reset()

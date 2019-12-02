@@ -15,6 +15,8 @@ public:
 	void LoadMuscles(const std::string& path);
 	void LoadBVH(const std::string& path,bool cyclic=true);
 
+	void GenerateBvhForPushExp(long crouch_angle, double walk_speed, double step_length);
+
 	void Reset();	
 	void SetPDParameters(double kp, double kv);
 	void AddEndEffector(const std::string& body_name){mEndEffectors.push_back(mSkeleton->getBodyNode(body_name));}

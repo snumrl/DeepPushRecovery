@@ -35,7 +35,6 @@ int main(int argc,char** argv)
 	// env->SetGround(MASS::BuildFromFile(std::string(MASS_ROOT_DIR)+std::string("/data/ground.xml")));
 
 	// env->Initialize();
-
 	Py_Initialize();
 	np::initialize();
 	glutInit(&argc, argv);
@@ -72,6 +71,6 @@ int main(int argc,char** argv)
 	// else if (argc==3)
 	// 	window = new MASS::Window(env,argv[1],argv[2]);
 	
-	window->initWindow(1920,1080,"gui");
+	window->initWindow(1024,768,"gui");
 	glutMainLoop();
 }

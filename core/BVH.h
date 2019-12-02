@@ -59,8 +59,9 @@ public:
 
 	double GetMaxTime(){return (mNumTotalFrames)*mTimeStep;}
 	double GetTimeStep(){return mTimeStep;}
-	void Parse(const std::string& file,bool cyclic=true);
-	
+	void Parse(const std::string& file, bool cyclic=true);
+    void ParseStr(const std::string& str, bool cyclic=true);
+
 	const std::map<std::string,std::string>& GetBVHMap(){return mBVHMap;}
 	const Eigen::Isometry3d& GetT0(){return T0;}
 	const Eigen::Isometry3d& GetT1(){return T1;}
@@ -80,6 +81,7 @@ private:
 
 	Eigen::Isometry3d T0,T1;
 	BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::ifstream& is);
+    BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::stringstream& is);
 };
 
 };

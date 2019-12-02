@@ -6,12 +6,15 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
+find_package(PythonLibs 3.4 REQUIRED)
 find_package(DART REQUIRED COMPONENTS collision-bullet CONFIG)
 find_package(TinyXML REQUIRED)
 
+include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${DART_INCLUDE_DIRS})
+include_directories(${TinyXML_INCLUDE_DIRS})
 
 file(GLOB srcs "*.h" "*.cpp")
 
 add_library(mss ${srcs})
-target_link_libraries(mss ${DART_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(mss ${DART_LIBRARIES} ${PYTHON_LIBRARIES} ${TinyXML_LIBRARIES})
