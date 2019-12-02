@@ -10,12 +10,13 @@ class Character
 {
 public:
 	Character();
+    Character(int _index);
 
 	void LoadSkeleton(const std::string& path,bool create_obj = false);
 	void LoadMuscles(const std::string& path);
 	void LoadBVH(const std::string& path,bool cyclic=true);
 
-	void GenerateBvhForPushExp(long crouch_angle, double walk_speed, double step_length);
+	void GenerateBvhForPushExp(long crouch_angle, double step_length, double walk_speed);
 
 	void Reset();	
 	void SetPDParameters(double kp, double kv);
@@ -24,13 +25,13 @@ public:
 
 	Eigen::VectorXd GetTargetPositions(double t,double dt);
 	std::pair<Eigen::VectorXd,Eigen::VectorXd> GetTargetPosAndVel(double t,double dt);
-	
-	
+
 	const dart::dynamics::SkeletonPtr& GetSkeleton(){return mSkeleton;}
 	const std::vector<Muscle*>& GetMuscles() {return mMuscles;}
 	const std::vector<dart::dynamics::BodyNode*>& GetEndEffectors(){return mEndEffectors;}
 	BVH* GetBVH(){return mBVH;}
 public:
+    int index;
 	dart::dynamics::SkeletonPtr mSkeleton;
 	BVH* mBVH;
 	Eigen::Isometry3d mTc;

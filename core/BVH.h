@@ -66,10 +66,10 @@ public:
 	const Eigen::Isometry3d& GetT0(){return T0;}
 	const Eigen::Isometry3d& GetT1(){return T1;}
 	bool IsCyclic(){return mCyclic;}
-private:
+public:
 	bool mCyclic;
-	std::vector<Eigen::VectorXd> mMotions;
 	std::map<std::string,BVHNode*> mMap;
+    std::vector<Eigen::VectorXd> mMotions;
 	double mTimeStep;
 	int mNumTotalChannels;
 	int mNumTotalFrames;

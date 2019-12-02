@@ -11,7 +11,7 @@ EnvManager(std::string meta_file,int num_envs)
 	omp_set_num_threads(mNumEnvs);
 #endif
 	for(int i = 0;i<mNumEnvs;i++){
-		mEnvs.push_back(new MASS::Environment());
+		mEnvs.push_back(new MASS::Environment(i));
 		MASS::Environment* env = mEnvs.back();
 
 		env->Initialize(meta_file,false);

@@ -251,7 +251,8 @@ BVH::
 ParseStr(const std::string& str,bool cyclic)
 {
     mCyclic = cyclic;
-    std::stringstream is(str);
+    std::stringstream is;
+    is.str(str);
 
     char buffer[256];
 
@@ -318,10 +319,10 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::i
 	double offset[3];
 	std::vector<std::string> c_name;
 
-	BVHNode* new_node = new BVHNode(name,parent);
+    BVHNode* new_node = new BVHNode(name,parent);
 	mMap.insert(std::make_pair(name,new_node));
 
-	is>>buffer; //{
+    is>>buffer; //{
 
 	while(is>>buffer)
 	{

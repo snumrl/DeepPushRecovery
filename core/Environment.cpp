@@ -4,17 +4,33 @@
 #include "BVH.h"
 #include "Muscle.h"
 #include "dart/collision/bullet/bullet.hpp"
+#include <chrono>
 using namespace dart;
 using namespace dart::simulation;
 using namespace dart::dynamics;
 using namespace MASS;
 
+#define STEP_LENGTH_AVG 1.
+#define STEP_LENGTH_VAR 0.3
+#define WALK_SPEED_AVG 1.
+#define WALK_SPEED_VAR 0.3
+
 Environment::
 Environment()
 	:mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
-
+    index = 0;
+    crouch_angle = 0;
 }
+
+Environment::
+Environment(int _index)
+        :mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
+{
+    index = _index;
+    crouch_angle = 0;
+}
+
 
 void
 Environment::
@@ -29,7 +45,7 @@ Initialize(const std::string& meta_file,bool load_obj)
 	std::string str;
 	std::string index;
 	std::stringstream ss;
-	MASS::Character* character = new MASS::Character();
+	MASS::Character* character = new MASS::Character(this->index);
 	while(!ifs.eof())
 	{
 		str.clear();
@@ -43,10 +59,7 @@ Initialize(const std::string& meta_file,bool load_obj)
 		{	
 			std::string str2;
 			ss>>str2;
-			if(!str2.compare("true"))
-				this->SetUseMuscle(true);
-			else
-				this->SetUseMuscle(false);
+			this->SetUseMuscle(!str2.compare("true"));
 		}
 		else if(!index.compare("con_hz")){
 			int hz;
@@ -152,6 +165,17 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->clearExternalForces();
 	
 	double t = 0.0;
+	int crouch_angle_set[] = {0, 20, 30, 60};
+    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    std::uniform_int_distribution<int> crouch_angle_distribution(0, 3);
+    std::normal_distribution<double> step_length_distribution(STEP_LENGTH_AVG, STEP_LENGTH_VAR);
+    std::normal_distribution<double> walk_speed_distribution(WALK_SPEED_AVG, WALK_SPEED_VAR);
+
+    crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
+    step_length = step_length_distribution(generator);
+    walk_speed = walk_speed_distribution(generator);
+
+    mCharacter->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 
 	if(RSI)
 		t = dart::math::random(0.0,mCharacter->GetBVH()->GetMaxTime()*0.9);
@@ -167,6 +191,7 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->setPositions(mTargetPositions);
 	mCharacter->GetSkeleton()->setVelocities(mTargetVelocities);
 	mCharacter->GetSkeleton()->computeForwardKinematics(true,false,false);
+    double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
 }
 void
 Environment::
@@ -276,7 +301,7 @@ IsEndOfEpisode()
 	Eigen::VectorXd v = mCharacter->GetSkeleton()->getVelocities();
 
 	double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
-	if(root_y<1.3)
+	if(root_y < 0.8)
 		isTerminal =true;
 	else if (dart::math::isNan(p) || dart::math::isNan(v))
 		isTerminal =true;
@@ -311,9 +336,13 @@ GetState()
 	p *= 0.8;
 	v *= 0.2;
 
-	Eigen::VectorXd state(p.rows()+v.rows()+1);
+	Eigen::VectorXd state(p.rows()+v.rows()+1 + 3);
 
-	state<<p,v,phi;
+	double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
+	double step_length_normalized = (step_length - STEP_LENGTH_AVG) / STEP_LENGTH_VAR;
+    double walk_speed_normalized = (walk_speed - WALK_SPEED_AVG) / WALK_SPEED_VAR;
+
+	state << p, v, phi, crouch_angle_normalized, step_length_normalized, walk_speed_normalized;
 	return state;
 }
 void 

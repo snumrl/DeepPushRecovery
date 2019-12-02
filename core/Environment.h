@@ -17,6 +17,7 @@ class Environment
 {
 public:
 	Environment();
+    Environment(int _index);
 
 	void SetUseMuscle(bool use_muscle){mUseMuscle = use_muscle;}
 	void SetControlHz(int con_hz) {mControlHz = con_hz;}
@@ -76,6 +77,11 @@ private:
 	int mRandomSampleIndex;
 
 	double w_q,w_v,w_ee,w_com;
+
+    int index;
+    int crouch_angle;
+    double step_length;
+    double walk_speed;
 };
 };
 

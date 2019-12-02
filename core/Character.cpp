@@ -4,6 +4,10 @@
 #include "Muscle.h"
 #include <tinyxml.h>
 #include <cstdio>
+
+// for pipe
+#include <sys/stat.h>
+
 using namespace dart;
 using namespace dart::dynamics;
 using namespace MASS;
@@ -11,7 +15,14 @@ Character::
 Character()
 	:mSkeleton(nullptr),mBVH(nullptr),mTc(Eigen::Isometry3d::Identity())
 {
+    this->index = 0;
+}
 
+Character::
+Character(int _index)
+        :mSkeleton(nullptr),mBVH(nullptr),mTc(Eigen::Isometry3d::Identity())
+{
+    this->index = _index;
 }
 
 void
@@ -91,43 +102,51 @@ LoadBVH(const std::string& path,bool cyclic)
 		std::cout<<"Initialize BVH class first"<<std::endl;
 		return;
 	}
-	mBVH->Parse(path,cyclic);
-	GenerateBvhForPushExp(0, 1., 1.);
+//	mBVH->Parse(path,cyclic);
+	GenerateBvhForPushExp(60, 1., 1.);
 }
-
 void
 Character::
 GenerateBvhForPushExp(long crouch_angle, double step_length, double walk_speed)
 {
-    FILE *fp;
-    int state;
+    //execute python code
+    char fifo_name[256];
+    sprintf(fifo_name,
+            (std::string(MASS_ROOT_DIR)+std::string("/fifo%d")).c_str(),
+            this->index);
 
+    char sh_script[256];
+    sprintf(sh_script,
+            (std::string("python3 ")+std::string(MASS_ROOT_DIR)+std::string("/python/pushrecoverybvhgenerator/bvh_generator_server.py %s %ld %lf %lf &")).c_str(),
+            fifo_name, crouch_angle, step_length, walk_speed);
+    system(sh_script);
 
-    char buff[1024];
-    fp = popen((
-            std::string("python3 ")
-            +std::string(MASS_ROOT_DIR)+std::string("/core/python/BvhGenerator.py ")
-            + std::string(MASS_ROOT_DIR)+"/data/motion/walk.bvh 0 1. 1.").c_str(), "r");
-    if (fp == NULL)
+    mknod(fifo_name, S_IFIFO | 0666, 0);
+    std::ifstream f(fifo_name);
+    std::string line;
+    getline(f, line);
+    auto data_size = std::stoi(line);
+    std::string data;
     {
-        perror("erro : ");
-        exit(0);
+        std::vector<char> buf(data_size);
+        f.read(buf.data(), data_size);
+        // write to vector data is valid since C++11
+        data.assign(buf.data(), buf.size());
+    }
+    if (!f.good()) {
+        std::cerr << "Read failed" << std::endl;
     }
 
-    while(fgets(buff, 1024, fp) != NULL)
-    {
-        printf("%s", buff);
-    }
-
-    pclose(fp);
+    mBVH->ParseStr(std::string(data));
 }
+
 
 void
 Character::
 Reset()
 {
 	mTc = mBVH->GetT0();
-	mTc.translation()[1] = 0.0;
+	mTc.translation()[1] -= 1.0;
 }
 void
 Character::
