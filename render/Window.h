@@ -52,6 +52,8 @@ private:
 	bool mNNLoaded;
 	bool mMuscleNNLoaded;
 	Eigen::Affine3d mViewMatrix;
+
+	bool isCudaAvaliable;
 };
 };
 

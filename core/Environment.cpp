@@ -399,8 +399,6 @@ GetState()
         double walk_speed_normalized = (walk_speed - walk_speed_mean) / walk_speed_var;
         normalized_walking_parameters.push_back(walk_speed_normalized);
     }
-    std::cout << "hahaha" << normalized_walking_parameters.size() << std::endl;
-
     Eigen::VectorXd state(p.rows()+v.rows()+1 + normalized_walking_parameters.size());
 
     switch(normalized_walking_parameters.size()){

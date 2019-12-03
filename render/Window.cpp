@@ -36,6 +36,7 @@ Window(Environment* env)
 	p::exec("import torchvision.transforms as T",mns);
 	p::exec("import numpy as np",mns);
 	p::exec("from Model import *",mns);
+    isCudaAvaliable = p::extract<bool> (p::eval("torch.cuda.is_available()", mns));
 }
 Window::
 Window(Environment* env,const std::string& nn_path)
@@ -50,8 +51,16 @@ Window(Environment* env,const std::string& nn_path)
 
 	nn_module = p::eval("SimulationNN(num_state,num_action)",mns);
 
-	p::object load = nn_module.attr("load");
-	load(nn_path);
+	if (isCudaAvaliable) {
+        p::object load = nn_module.attr("load");
+        load(nn_path);
+    }
+	else {
+	    p::object torch_load = p::eval(
+                (std::string("torch.load('") + nn_path + std::string("', map_location=torch.device('cpu'))")).c_str(),
+                 mns);
+	    nn_module.attr("load_state_dict")(torch_load);
+	}
 }
 Window::
 Window(Environment* env,const std::string& nn_path,const std::string& muscle_nn_path)
@@ -68,8 +77,16 @@ Window(Environment* env,const std::string& nn_path,const std::string& muscle_nn_
 
 	muscle_nn_module = p::eval("MuscleNN(num_total_muscle_related_dofs,num_actions,num_muscles)",mns);
 
-	p::object load = muscle_nn_module.attr("load");
-	load(muscle_nn_path);
+    if (isCudaAvaliable) {
+        p::object load = muscle_nn_module.attr("load");
+        load(muscle_nn_path);
+    }
+    else {
+        p::object torch_load = p::eval(
+                (std::string("torch.load('") + muscle_nn_path + std::string("', map_location=torch.device('cpu'))")).c_str(),
+                mns);
+        muscle_nn_module.attr("load_state_dict")(torch_load);
+    }
 }
 void
 Window::
