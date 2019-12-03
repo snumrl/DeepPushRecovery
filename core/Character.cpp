@@ -102,8 +102,7 @@ LoadBVH(const std::string& path,bool cyclic)
 		std::cout<<"Initialize BVH class first"<<std::endl;
 		return;
 	}
-//	mBVH->Parse(path,cyclic);
-	GenerateBvhForPushExp(60, 1., 1.);
+	mBVH->Parse(path,cyclic);
 }
 void
 Character::
@@ -146,7 +145,7 @@ Character::
 Reset()
 {
 	mTc = mBVH->GetT0();
-	mTc.translation()[1] -= 1.0;
+	mTc.translation()[1] -= 1.05;
 }
 void
 Character::

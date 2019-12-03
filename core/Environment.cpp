@@ -386,6 +386,7 @@ GetState()
 	v *= 0.2;
 
 	std::vector<double> normalized_walking_parameters;
+	normalized_walking_parameters.clear();
 	if (crouch_angle_set.size() > 1) {
         double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
         normalized_walking_parameters.push_back(crouch_angle_normalized);
@@ -398,6 +399,7 @@ GetState()
         double walk_speed_normalized = (walk_speed - walk_speed_mean) / walk_speed_var;
         normalized_walking_parameters.push_back(walk_speed_normalized);
     }
+    std::cout << "hahaha" << normalized_walking_parameters.size() << std::endl;
 
     Eigen::VectorXd state(p.rows()+v.rows()+1 + normalized_walking_parameters.size());
 
