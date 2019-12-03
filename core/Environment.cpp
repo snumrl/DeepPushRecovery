@@ -4,16 +4,19 @@
 #include "BVH.h"
 #include "Muscle.h"
 #include "dart/collision/bullet/bullet.hpp"
+
 #include <chrono>
+#include <boost/algorithm/clamp.hpp>
+
 using namespace dart;
 using namespace dart::simulation;
 using namespace dart::dynamics;
 using namespace MASS;
 
 #define STEP_LENGTH_AVG 1.
-#define STEP_LENGTH_VAR 0.3
+#define STEP_LENGTH_VAR 0.2
 #define WALK_SPEED_AVG 1.
-#define WALK_SPEED_VAR 0.3
+#define WALK_SPEED_VAR 0.2
 
 Environment::
 Environment()
@@ -172,8 +175,8 @@ Reset(bool RSI)
     std::normal_distribution<double> walk_speed_distribution(WALK_SPEED_AVG, WALK_SPEED_VAR);
 
     crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
-    step_length = step_length_distribution(generator);
-    walk_speed = walk_speed_distribution(generator);
+    step_length = boost::algorithm::clamp(step_length_distribution(generator), STEP_LENGTH_AVG-2*STEP_LENGTH_VAR, STEP_LENGTH_AVG+2*STEP_LENGTH_VAR)
+    walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator), WALK_SPEED_AVG-2*WALK_SPEED_VAR, WALK_SPEED_AVG+2*WALK_SPEED_VAR)
 
     mCharacter->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 
