@@ -80,8 +80,13 @@ private:
 
     int index;
     int crouch_angle;
+    std::vector<int> crouch_angle_set;
     double step_length;
+    double step_length_mean;
+    double step_length_var;
     double walk_speed;
+    double walk_speed_mean;
+    double walk_speed_var;
 };
 };
 

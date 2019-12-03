@@ -3,7 +3,7 @@
 #include <omp.h>
 
 EnvManager::
-EnvManager(std::string meta_file,int num_envs)
+EnvManager(std::string meta_file, int num_envs)
 	:mNumEnvs(num_envs)
 {
 	dart::math::seedRand();

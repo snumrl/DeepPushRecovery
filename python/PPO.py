@@ -58,11 +58,13 @@ class ReplayBuffer(object):
 
     def Clear(self):
         self.buffer.clear()
+
+
 class PPO(object):
-    def __init__(self,meta_file):
+    def __init__(self, meta_file, num_slaves=16):
         np.random.seed(seed = int(time.time()))
-        self.num_slaves = 12
-        self.env = EnvManager(meta_file,self.num_slaves)
+        self.num_slaves = num_slaves
+        self.env = EnvManager(meta_file, self.num_slaves)
         self.use_muscle = self.env.UseMuscle()
         self.num_state = self.env.GetNumState()
         self.num_action = self.env.GetNumAction()
@@ -381,15 +383,19 @@ import argparse
 import os
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m','--model',help='model path')
-    parser.add_argument('-d','--meta',help='meta file')
+    parser.add_argument('-m', '--model', help='model path')
+    parser.add_argument('-d', '--meta', help='meta file')
+    parser.add_argument('-p', '--parallel', help='num slaves')
 
-    args =parser.parse_args()
+    args = parser.parse_args()
     if args.meta is None:
         print('Provide meta file')
         exit()
 
-    ppo = PPO(args.meta)
+    if args.parallel is None:
+        ppo = PPO(args.meta)
+    else:
+        ppo = PPO(args.meta, int(args.parallel))
     nn_dir = '../nn'
     if not os.path.exists(nn_dir):
         os.makedirs(nn_dir)

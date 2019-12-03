@@ -13,17 +13,19 @@ using namespace dart::simulation;
 using namespace dart::dynamics;
 using namespace MASS;
 
-#define STEP_LENGTH_AVG 1.
-#define STEP_LENGTH_VAR 0.2
-#define WALK_SPEED_AVG 1.
-#define WALK_SPEED_VAR 0.2
-
 Environment::
 Environment()
 	:mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
     index = 0;
     crouch_angle = 0;
+    crouch_angle_set.clear();
+    walk_speed = 1.;
+    walk_speed_mean = 1.;
+    walk_speed_var = .2;
+    step_length = 1.;
+    step_length_mean = 1.;
+    step_length_var = .2;
 }
 
 Environment::
@@ -32,6 +34,13 @@ Environment(int _index)
 {
     index = _index;
     crouch_angle = 0;
+    crouch_angle_set.clear();
+    walk_speed = 1.;
+    walk_speed_mean = 1.;
+    walk_speed_var = .2;
+    step_length = 1.;
+    step_length_mean = 1.;
+    step_length_var = .2;
 }
 
 
@@ -98,7 +107,7 @@ Initialize(const std::string& meta_file,bool load_obj)
 			bool cyclic = false;
 			if(!str3.compare("true"))
 				cyclic = true;
-			character->LoadBVH(std::string(MASS_ROOT_DIR)+str2,cyclic);
+//			character->LoadBVH(std::string(MASS_ROOT_DIR)+str2,cyclic);
 		}
 		else if(!index.compare("reward_param")){
 			double a,b,c,d;
@@ -107,9 +116,37 @@ Initialize(const std::string& meta_file,bool load_obj)
 
 		}
 
+		else if(index == "crouch_angle") {
+		    std::string str1;
+		    ss >> str1;
+		    this->crouch_angle_set.clear();
+		    if (str1 == "all")
+            {
+		        this->crouch_angle_set.push_back(0);
+                this->crouch_angle_set.push_back(20);
+                this->crouch_angle_set.push_back(30);
+                this->crouch_angle_set.push_back(60);
+            }
+		    else {
+		        this->crouch_angle_set.push_back(atoi(str1.c_str()));
+		    }
+		    crouch_angle = crouch_angle_set[0];
+		}
+		else if(index == "step_length") {
+		    ss >> step_length_mean >> step_length_var;
+		    step_length = step_length_mean;
+		}
+
+		else if(index == "walk_speed") {
+		    ss >> walk_speed_mean >> walk_speed_var;
+		    walk_speed = walk_speed_mean;
+		}
+
 
 	}
 	ifs.close();
+
+	character->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 	
 	
 	double kp = 300.0;
@@ -168,17 +205,27 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->clearExternalForces();
 	
 	double t = 0.0;
-	int crouch_angle_set[] = {0, 20, 30, 60};
     std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
-    std::uniform_int_distribution<int> crouch_angle_distribution(0, 3);
-    std::normal_distribution<double> step_length_distribution(STEP_LENGTH_AVG, STEP_LENGTH_VAR);
-    std::normal_distribution<double> walk_speed_distribution(WALK_SPEED_AVG, WALK_SPEED_VAR);
+    if (crouch_angle_set.size() > 1) {
+        std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size());
+        crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
+    }
 
-    crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
-    step_length = boost::algorithm::clamp(step_length_distribution(generator), STEP_LENGTH_AVG-2*STEP_LENGTH_VAR, STEP_LENGTH_AVG+2*STEP_LENGTH_VAR);
-    walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator), WALK_SPEED_AVG-2*WALK_SPEED_VAR, WALK_SPEED_AVG+2*WALK_SPEED_VAR);
+    if (step_length_var > DBL_EPSILON) {
+        std::normal_distribution<double> step_length_distribution(step_length_mean, step_length_var);
+        step_length = boost::algorithm::clamp(step_length_distribution(generator),
+                                              step_length_mean - 2 * step_length_var,
+                                              step_length_mean + 2 * step_length_var);
+    }
 
-    mCharacter->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
+    if (walk_speed_var > DBL_EPSILON) {
+        std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, walk_speed_var);
+        walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator), walk_speed_mean - 2 * walk_speed_var,
+                                             walk_speed_mean + 2 * walk_speed_var);
+    }
+
+    if(!(crouch_angle_set.size() <= 1 && step_length_var < DBL_EPSILON && walk_speed_var < DBL_EPSILON))
+        mCharacter->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 
 	if(RSI)
 		t = dart::math::random(0.0,mCharacter->GetBVH()->GetMaxTime()*0.9);
@@ -194,7 +241,6 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->setPositions(mTargetPositions);
 	mCharacter->GetSkeleton()->setVelocities(mTargetVelocities);
 	mCharacter->GetSkeleton()->computeForwardKinematics(true,false,false);
-    double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
 }
 void
 Environment::
@@ -339,13 +385,39 @@ GetState()
 	p *= 0.8;
 	v *= 0.2;
 
-	Eigen::VectorXd state(p.rows()+v.rows()+1 + 3);
+	std::vector<double> normalized_walking_parameters;
+	if (crouch_angle_set.size() > 1) {
+        double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
+        normalized_walking_parameters.push_back(crouch_angle_normalized);
+	}
+    if (step_length_var > DBL_EPSILON) {
+        double step_length_normalized = (step_length - step_length_mean) / step_length_var;
+        normalized_walking_parameters.push_back(step_length_normalized);
+    }
+    if (walk_speed_var > DBL_EPSILON) {
+        double walk_speed_normalized = (walk_speed - walk_speed_mean) / walk_speed_var;
+        normalized_walking_parameters.push_back(walk_speed_normalized);
+    }
 
-	double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
-	double step_length_normalized = (step_length - STEP_LENGTH_AVG) / STEP_LENGTH_VAR;
-    double walk_speed_normalized = (walk_speed - WALK_SPEED_AVG) / WALK_SPEED_VAR;
+    Eigen::VectorXd state(p.rows()+v.rows()+1 + normalized_walking_parameters.size());
 
-	state << p, v, phi, crouch_angle_normalized, step_length_normalized, walk_speed_normalized;
+    switch(normalized_walking_parameters.size()){
+        case 0:
+            state << p, v, phi;
+            break;
+        case 1:
+            state << p, v, phi, normalized_walking_parameters[0];
+            break;
+        case 2:
+            state << p, v, phi, normalized_walking_parameters[0], normalized_walking_parameters[1];
+            break;
+        case 3:
+            state << p, v, phi, normalized_walking_parameters[0], normalized_walking_parameters[1], normalized_walking_parameters[2];
+            break;
+        default:
+            state << p, v, phi;
+            break;
+    }
 	return state;
 }
 void 
