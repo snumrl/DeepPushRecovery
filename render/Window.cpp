@@ -12,8 +12,11 @@ using namespace dart::gui;
 
 Window::
 Window(Environment* env)
-	:mEnv(env),mFocus(true),mSimulating(false),mDrawOBJ(false),mDrawShadow(true),mMuscleNNLoaded(false)
+	:mEnv(env),mFocus(true),mSimulating(false),mDrawOBJ(false),mDrawShadow(true),mMuscleNNLoaded(false),
+	mBVHPlaying(false)
 {
+	mEnv->PrintWalkingParams();
+
 	mBackground[0] = 1.0;
 	mBackground[1] = 1.0;
 	mBackground[2] = 1.0;
@@ -128,6 +131,11 @@ keyboard(unsigned char _key, int _x, int _y)
 	case 'r': this->Reset();break;
 	case ' ': mSimulating = !mSimulating;break;
 	case 'o': mDrawOBJ = !mDrawOBJ;break;
+
+	case 'R': this->Reset(false);break;
+    case 'S': this->StepMotion();break;
+	case 'p': mBVHPlaying = !mBVHPlaying;break;
+
 	case 27 : exit(0);break;
 	default:
 		Win3D::keyboard(_key,_x,_y);break;
@@ -140,9 +148,23 @@ displayTimer(int _val)
 {
 	if(mSimulating)
 		Step();
+	else if(mBVHPlaying)
+	    StepMotion();
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
+void
+Window::
+StepMotion()
+{
+    double t = mEnv->GetWorld()->getTime();
+    double dt = 1./mEnv->GetControlHz();
+    Eigen::VectorXd p = mEnv->GetCharacter()->GetTargetPositions(t, 1./mEnv->GetControlHz());
+    mEnv->GetCharacter()->GetSkeleton()->setPositions(p);
+    mEnv->GetCharacter()->GetSkeleton()->computeForwardKinematics(true,false,false);
+    mEnv->GetWorld()->setTime(t + dt);
+}
+
 void
 Window::
 Step()
@@ -174,9 +196,10 @@ Step()
 }
 void
 Window::
-Reset()
+Reset(bool RSI)
 {
-	mEnv->Reset();
+	mEnv->Reset(RSI);
+	mEnv->PrintWalkingParamsSampled();
 }
 void
 Window::

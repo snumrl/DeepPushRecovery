@@ -36,7 +36,9 @@ private:
 	void DrawAiMesh(const struct aiScene *sc, const struct aiNode* nd,const Eigen::Affine3d& M,double y);
 	void DrawGround(double y);
 	void Step();
-	void Reset();
+	void Reset(bool RSI=true);
+
+	void StepMotion();
 
 	Eigen::VectorXd GetActionFromNN();
 	Eigen::VectorXd GetActivationFromNN(const Eigen::VectorXd& mt);
@@ -54,6 +56,7 @@ private:
 	Eigen::Affine3d mViewMatrix;
 
 	bool isCudaAvaliable;
+    int mBVHPlaying;
 };
 };
 

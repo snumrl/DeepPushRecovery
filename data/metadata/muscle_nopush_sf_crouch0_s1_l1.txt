@@ -5,6 +5,5 @@ skel_file /data/human.xml
 muscle_file /data/muscle284.xml
 bvh_file /data/motion/walk.bvh true
 reward_param 0.75 0.1 0.0 0.15
-crouch_angle 0
-step_length 1.0 0.0
-walk_speed 1.0 0.0
+walking_param 0 1.0 1.0 0.0 0.0 0.0
+walking_sample uniform

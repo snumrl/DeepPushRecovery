@@ -55,6 +55,10 @@ public:
 	const Eigen::VectorXd& GetAverageActivationLevels(){return mAverageActivationLevels;}
 	void SetActivationLevels(const Eigen::VectorXd& a){mActivationLevels = a;}
 	bool GetUseMuscle(){return mUseMuscle;}
+
+	void PrintWalkingParams();
+	void PrintWalkingParamsSampled();
+
 private:
 	dart::simulation::WorldPtr mWorld;
 	int mControlHz,mSimulationHz;
@@ -87,6 +91,8 @@ private:
     double walk_speed;
     double walk_speed_mean;
     double walk_speed_var;
+    double step_speed_covar;
+    bool sample_param_as_normal;  // if not, uniform sampling
 };
 };
 

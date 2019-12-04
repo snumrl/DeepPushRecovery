@@ -26,6 +26,8 @@ Environment()
     step_length = 1.;
     step_length_mean = 1.;
     step_length_var = .2;
+    step_speed_covar = 0.;
+    sample_param_as_normal = false;
 }
 
 Environment::
@@ -41,6 +43,8 @@ Environment(int _index)
     step_length = 1.;
     step_length_mean = 1.;
     step_length_var = .2;
+    step_speed_covar = 0.;
+    sample_param_as_normal = false;
 }
 
 
@@ -116,7 +120,7 @@ Initialize(const std::string& meta_file,bool load_obj)
 
 		}
 
-		else if(index == "crouch_angle") {
+		else if(index == "walking_param") {
 		    std::string str1;
 		    ss >> str1;
 		    this->crouch_angle_set.clear();
@@ -131,23 +135,20 @@ Initialize(const std::string& meta_file,bool load_obj)
 		        this->crouch_angle_set.push_back(atoi(str1.c_str()));
 		    }
 		    crouch_angle = crouch_angle_set[0];
-		}
-		else if(index == "step_length") {
-		    ss >> step_length_mean >> step_length_var;
-		    step_length = step_length_mean;
-		}
 
-		else if(index == "walk_speed") {
-		    ss >> walk_speed_mean >> walk_speed_var;
+		    ss >> step_length_mean >> walk_speed_mean >> step_length_var >> step_speed_covar >> walk_speed_var;
+            step_length = step_length_mean;
 		    walk_speed = walk_speed_mean;
 		}
-
-
+		else if(index == "walking_sample") {
+		    std::string str1;
+		    ss >> str1;
+		    this->sample_param_as_normal = (str1 == "normal");
+		}
 	}
 	ifs.close();
 
 	character->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
-	
 	
 	double kp = 300.0;
 	character->SetPDParameters(kp,sqrt(2*kp));
@@ -210,18 +211,58 @@ Reset(bool RSI)
         std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size());
         crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
     }
+    if (sample_param_as_normal) {
+        // normal sampling
+        if (step_length_var > DBL_EPSILON && walk_speed_var > DBL_EPSILON) {
+            // using multivariate gaussian
+            Eigen::Vector2d mean;
+            mean << step_length_mean, walk_speed_mean;
+            Eigen::Matrix2d covar;
+            covar << step_length_var, step_speed_covar, step_speed_covar, walk_speed_var;
 
-    if (step_length_var > DBL_EPSILON) {
-        std::normal_distribution<double> step_length_distribution(step_length_mean, step_length_var);
-        step_length = boost::algorithm::clamp(step_length_distribution(generator),
-                                              step_length_mean - 2 * step_length_var,
-                                              step_length_mean + 2 * step_length_var);
+            Eigen::Vector2d normalized_val;
+            std::normal_distribution<double> normal(0, 1);
+            normalized_val << boost::algorithm::clamp(normal(generator), -2., 2.),
+                              boost::algorithm::clamp(normal(generator), -2., 2.);
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
+                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+
+            Eigen::Vector2d sample = mean + normTransform * normalized_val;
+            step_length = sample[0];
+            walk_speed = sample[1];
+        }
+
+        if (step_length_var > DBL_EPSILON) {
+            std::normal_distribution<double> step_length_distribution(step_length_mean, step_length_var);
+            step_length = boost::algorithm::clamp(step_length_distribution(generator),
+                                                  step_length_mean - 2 * step_length_var,
+                                                  step_length_mean + 2 * step_length_var);
+        }
+
+        if (walk_speed_var > DBL_EPSILON) {
+            std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, walk_speed_var);
+            walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator),
+                                                 walk_speed_mean - 2 * walk_speed_var,
+                                                 walk_speed_mean + 2 * walk_speed_var);
+        }
     }
-
-    if (walk_speed_var > DBL_EPSILON) {
-        std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, walk_speed_var);
-        walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator), walk_speed_mean - 2 * walk_speed_var,
+    else {
+        // uniform sampling
+        if (step_length_var > DBL_EPSILON) {
+            std::uniform_real_distribution<double>
+                    step_length_distribution(step_length_mean - 2 * step_length_var,
+                                             step_length_mean + 2 * step_length_var);
+            step_length = step_length_distribution(generator);
+        }
+        if (walk_speed_var > DBL_EPSILON) {
+            std::uniform_real_distribution<double>
+                    walk_speed_distribution(walk_speed_mean - 2 * walk_speed_var,
                                              walk_speed_mean + 2 * walk_speed_var);
+            walk_speed = walk_speed_distribution(generator);
+        }
+
     }
 
     if(!(crouch_angle_set.size() <= 1 && step_length_var < DBL_EPSILON && walk_speed_var < DBL_EPSILON))
@@ -491,4 +532,35 @@ GetReward()
 	double r = r_ee*(w_q*r_q + w_v*r_v);
 
 	return r;
+}
+
+void
+Environment::
+PrintWalkingParamsSampled()
+{
+    std::cout << "crouch angle: " << crouch_angle << " degree" << std::endl;
+    std::cout << "step length: " << step_length << " m" << std::endl;
+    std::cout << "walking speed: " << walk_speed << " m/s" << std::endl;
+}
+
+void
+Environment::
+PrintWalkingParams() {
+    std::cout << "crouch angle set: ";
+    for (int i = 0; i < crouch_angle_set.size(); i++) {
+        std::cout << crouch_angle << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "step length mean: " << step_length_mean << " m" << std::endl;
+    std::cout << "step length var: " << step_length_var << " m" << std::endl;
+    std::cout << "walking speed mean: " << walk_speed_mean << " m/s" << std::endl;
+    std::cout << "walking speed var: " << walk_speed_var << " m/s" << std::endl;
+    if (sample_param_as_normal) {
+        std::cout << "step_speed covar: " << step_speed_covar << " m/s" << std::endl;
+        std::cout << "normal distribution" << std::endl;
+    }
+    else {
+        std::cout << "uniform distribution" << std::endl;
+    }
 }

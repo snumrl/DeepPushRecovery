@@ -145,7 +145,8 @@ Character::
 Reset()
 {
 	mTc = mBVH->GetT0();
-	mTc.translation()[1] -= 1.05;
+	mTc.translation()[1] -= 1.015;
+    // mTc.translation()[1] = 0.0;
 }
 void
 Character::
@@ -205,8 +206,6 @@ GetTargetPositions(double t,double dt)
 			p[5] += delta;
 		}
 
-
-
 		double tdt_mod = std::fmod(t+dt, mBVH->GetMaxTime());
 		if(tdt_mod-dt<0.0){
 			Eigen::Isometry3d T01 = mBVH->GetT1()*(mBVH->GetT0().inverse());
@@ -216,7 +215,7 @@ GetTargetPositions(double t,double dt)
 			T01.linear() = dart::math::expMapRot(p01);
 
 			mTc = T01*mTc;
-			mTc.translation()[1] = 0.0;
+			// mTc.translation()[1] = 0.0;
 		}
 	}
 	
