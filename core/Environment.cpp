@@ -18,15 +18,16 @@ Environment()
 	:mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
     index = 0;
+    crouch_angle_index = 0;
     crouch_angle = 0;
+    step_length = 1.12620703;
+    walk_speed = 0.9943359644;
     crouch_angle_set.clear();
-    walk_speed = 1.;
-    walk_speed_mean = 1.;
-    walk_speed_var = .2;
-    step_length = 1.;
-    step_length_mean = 1.;
-    step_length_var = .2;
-    step_speed_covar = 0.;
+    step_length_mean_vec.clear();
+    step_length_var_vec.clear();
+    walk_speed_mean_vec.clear();
+    walk_speed_var_vec.clear();
+    step_speed_covar_vec.clear();
     sample_param_as_normal = false;
 }
 
@@ -35,15 +36,16 @@ Environment(int _index)
         :mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
     index = _index;
+    crouch_angle_index = 0;
     crouch_angle = 0;
+    step_length = 1.12620703;
+    walk_speed = 0.9943359644;
     crouch_angle_set.clear();
-    walk_speed = 1.;
-    walk_speed_mean = 1.;
-    walk_speed_var = .2;
-    step_length = 1.;
-    step_length_mean = 1.;
-    step_length_var = .2;
-    step_speed_covar = 0.;
+    step_length_mean_vec.clear();
+    step_length_var_vec.clear();
+    walk_speed_mean_vec.clear();
+    walk_speed_var_vec.clear();
+    step_speed_covar_vec.clear();
     sample_param_as_normal = false;
 }
 
@@ -119,26 +121,18 @@ Initialize(const std::string& meta_file,bool load_obj)
 			this->SetRewardParameters(a,b,c,d);
 
 		}
-
 		else if(index == "walking_param") {
 		    std::string str1;
 		    ss >> str1;
-		    this->crouch_angle_set.clear();
-		    if (str1 == "all")
-            {
-		        this->crouch_angle_set.push_back(0);
-                this->crouch_angle_set.push_back(20);
-                this->crouch_angle_set.push_back(30);
-                this->crouch_angle_set.push_back(60);
-            }
-		    else {
-		        this->crouch_angle_set.push_back(atoi(str1.c_str()));
-		    }
-		    crouch_angle = crouch_angle_set[0];
+            crouch_angle_set.push_back(atoi(str1.c_str()));
+		    double a, b, c, d, e;
+            ss>>a>>b>>c>>d>>e;
+		    step_length_mean_vec.push_back(a);
+            walk_speed_mean_vec.push_back(b);
+            step_length_var_vec.push_back(c);
+            step_speed_covar_vec.push_back(d);
+            walk_speed_var_vec.push_back(e);
 
-		    ss >> step_length_mean >> walk_speed_mean >> step_length_var >> step_speed_covar >> walk_speed_var;
-            step_length = step_length_mean;
-		    walk_speed = walk_speed_mean;
 		}
 		else if(index == "walking_sample") {
 		    std::string str1;
@@ -148,7 +142,21 @@ Initialize(const std::string& meta_file,bool load_obj)
 	}
 	ifs.close();
 
-	character->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
+	if (crouch_angle_set.empty()) {
+	    crouch_angle_set.push_back(0);
+        step_length_mean_vec.push_back(1.12620703);
+        walk_speed_mean_vec.push_back(0.9943359644);
+        step_length_var_vec.push_back(0.);
+        walk_speed_var_vec.push_back(0.);
+        step_speed_covar_vec.push_back(0.);
+    }
+
+	crouch_angle_index = 0;
+    crouch_angle = crouch_angle_set[0];
+    step_length = step_length_mean_vec[0];
+    walk_speed = walk_speed_mean_vec[0];
+
+    character->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 	
 	double kp = 300.0;
 	character->SetPDParameters(kp,sqrt(2*kp));
@@ -206,11 +214,21 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->clearExternalForces();
 	
 	double t = 0.0;
+
     std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    crouch_angle_index = 0;
     if (crouch_angle_set.size() > 1) {
-        std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size());
-        crouch_angle = crouch_angle_set[crouch_angle_distribution(generator)];
+        std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size()-1);
+        crouch_angle_index = crouch_angle_distribution(generator);
     }
+    crouch_angle = crouch_angle_set[crouch_angle_index];
+
+    double step_length_mean = step_length_mean_vec[crouch_angle_index];
+    double step_length_var = step_length_var_vec[crouch_angle_index];
+    double walk_speed_mean = walk_speed_mean_vec[crouch_angle_index];
+    double walk_speed_var = walk_speed_var_vec[crouch_angle_index];
+    double step_speed_covar = step_speed_covar_vec[crouch_angle_index];
+
     if (sample_param_as_normal) {
         // normal sampling
         if (step_length_var > DBL_EPSILON && walk_speed_var > DBL_EPSILON) {
@@ -223,11 +241,11 @@ Reset(bool RSI)
             Eigen::Vector2d normalized_val;
             std::normal_distribution<double> normal(0, 1);
             normalized_val << boost::algorithm::clamp(normal(generator), -2., 2.),
-                              boost::algorithm::clamp(normal(generator), -2., 2.);
+                    boost::algorithm::clamp(normal(generator), -2., 2.);
 
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
             Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
 
             Eigen::Vector2d sample = mean + normTransform * normalized_val;
             step_length = sample[0];
@@ -247,8 +265,7 @@ Reset(bool RSI)
                                                  walk_speed_mean - 2 * walk_speed_var,
                                                  walk_speed_mean + 2 * walk_speed_var);
         }
-    }
-    else {
+    } else {
         // uniform sampling
         if (step_length_var > DBL_EPSILON) {
             std::uniform_real_distribution<double>
@@ -259,13 +276,14 @@ Reset(bool RSI)
         if (walk_speed_var > DBL_EPSILON) {
             std::uniform_real_distribution<double>
                     walk_speed_distribution(walk_speed_mean - 2 * walk_speed_var,
-                                             walk_speed_mean + 2 * walk_speed_var);
+                                            walk_speed_mean + 2 * walk_speed_var);
             walk_speed = walk_speed_distribution(generator);
         }
-
     }
 
-    if(!(crouch_angle_set.size() <= 1 && step_length_var < DBL_EPSILON && walk_speed_var < DBL_EPSILON))
+
+
+    if(!(crouch_angle_set.size() == 1 && step_length_var < DBL_EPSILON && walk_speed_var < DBL_EPSILON))
         mCharacter->GenerateBvhForPushExp(crouch_angle, step_length, walk_speed);
 
 	if(RSI)
@@ -432,14 +450,17 @@ GetState()
         double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
         normalized_walking_parameters.push_back(crouch_angle_normalized);
 	}
-    if (step_length_var > DBL_EPSILON) {
-        double step_length_normalized = (step_length - step_length_mean) / step_length_var;
+
+    if (step_length_var_vec[crouch_angle_index] > DBL_EPSILON) {
+        double step_length_normalized = (step_length - step_length_mean_vec[crouch_angle_index]) / step_length_var_vec[crouch_angle_index];
         normalized_walking_parameters.push_back(step_length_normalized);
     }
-    if (walk_speed_var > DBL_EPSILON) {
-        double walk_speed_normalized = (walk_speed - walk_speed_mean) / walk_speed_var;
+
+    if (walk_speed_var_vec[crouch_angle_index] > DBL_EPSILON) {
+        double walk_speed_normalized = (walk_speed - walk_speed_mean_vec[crouch_angle_index]) / walk_speed_var_vec[crouch_angle_index];
         normalized_walking_parameters.push_back(walk_speed_normalized);
     }
+
     Eigen::VectorXd state(p.rows()+v.rows()+1 + normalized_walking_parameters.size());
 
     switch(normalized_walking_parameters.size()){
@@ -546,18 +567,18 @@ PrintWalkingParamsSampled()
 void
 Environment::
 PrintWalkingParams() {
-    std::cout << "crouch angle set: ";
+    std::cout << "Walking parameter info: ";
     for (int i = 0; i < crouch_angle_set.size(); i++) {
-        std::cout << crouch_angle << " ";
+        std::cout << "crouch " << crouch_angle_set[i] << std::endl;
+        std::cout << "step length mean: " << step_length_mean_vec[i] << " m" << std::endl;
+        std::cout << "step length var: " << step_length_var_vec[i] << " m" << std::endl;
+        std::cout << "walking speed mean: " << walk_speed_mean_vec[i] << " m/s" << std::endl;
+        std::cout << "walking speed var: " << walk_speed_var_vec[i] << " m/s" << std::endl;
+        if (sample_param_as_normal)
+            std::cout << "step_speed covar: " << step_speed_covar_vec[i] << " m/s" << std::endl;
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
-
-    std::cout << "step length mean: " << step_length_mean << " m" << std::endl;
-    std::cout << "step length var: " << step_length_var << " m" << std::endl;
-    std::cout << "walking speed mean: " << walk_speed_mean << " m/s" << std::endl;
-    std::cout << "walking speed var: " << walk_speed_var << " m/s" << std::endl;
     if (sample_param_as_normal) {
-        std::cout << "step_speed covar: " << step_speed_covar << " m/s" << std::endl;
         std::cout << "normal distribution" << std::endl;
     }
     else {
