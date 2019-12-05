@@ -28,7 +28,7 @@ int main(int argc,char** argv)
 	// if(env->GetUseMuscle())
 	// 	character->LoadMuscles(std::string(MASS_ROOT_DIR)+std::string("/data/muscle.xml"));
 	// character->LoadBVH(std::string(MASS_ROOT_DIR)+std::string("/data/motion/walk.bvh"),true);
-	
+
 	// double kp = 300.0;
 	// character->SetPDParameters(kp,sqrt(2*kp));
 	// env->SetCharacter(character);

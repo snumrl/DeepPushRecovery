@@ -29,6 +29,7 @@ Environment()
     walk_speed_var_vec.clear();
     stride_speed_covar_vec.clear();
     sample_param_as_normal = false;
+    walking_param_change = false;
 }
 
 Environment::
@@ -47,6 +48,7 @@ Environment(int _index)
     walk_speed_var_vec.clear();
     stride_speed_covar_vec.clear();
     sample_param_as_normal = false;
+    walking_param_change = false;
 }
 
 
@@ -156,6 +158,10 @@ Initialize(const std::string& meta_file,bool load_obj)
     stride_length = stride_length_mean_vec[0];
     walk_speed = walk_speed_mean_vec[0];
 
+    walking_param_change = crouch_angle_set.size() > 1
+            || stride_length_var_vec[0] > DBL_EPSILON
+            || walk_speed_var_vec[0] > DBL_EPSILON;
+
     character->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
 	
 	double kp = 300.0;
@@ -215,76 +221,10 @@ Reset(bool RSI)
 	
 	double t = 0.0;
 
-    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
-    crouch_angle_index = 0;
-    if (crouch_angle_set.size() > 1) {
-        std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size()-1);
-        crouch_angle_index = crouch_angle_distribution(generator);
-    }
-    crouch_angle = crouch_angle_set[crouch_angle_index];
-
-    double stride_length_mean = stride_length_mean_vec[crouch_angle_index];
-    double stride_length_var = stride_length_var_vec[crouch_angle_index];
-    double walk_speed_mean = walk_speed_mean_vec[crouch_angle_index];
-    double walk_speed_var = walk_speed_var_vec[crouch_angle_index];
-    double stride_speed_covar = stride_speed_covar_vec[crouch_angle_index];
-
-    if (sample_param_as_normal) {
-        // normal sampling
-        if (stride_length_var > DBL_EPSILON && walk_speed_var > DBL_EPSILON) {
-            // using multivariate gaussian
-            Eigen::Vector2d mean;
-            mean << stride_length_mean, walk_speed_mean;
-            Eigen::Matrix2d covar;
-            covar << stride_length_var, stride_speed_covar, stride_speed_covar, walk_speed_var;
-
-            Eigen::Vector2d normalized_val;
-            std::normal_distribution<double> normal(0, 1);
-            normalized_val << boost::algorithm::clamp(normal(generator), -2., 2.),
-                    boost::algorithm::clamp(normal(generator), -2., 2.);
-
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
-            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
-
-            Eigen::Vector2d sample = mean + normTransform * normalized_val;
-            stride_length = sample[0];
-            walk_speed = sample[1];
-        }
-
-        if (stride_length_var > DBL_EPSILON) {
-            std::normal_distribution<double> stride_length_distribution(stride_length_mean, stride_length_var);
-            stride_length = boost::algorithm::clamp(stride_length_distribution(generator),
-                                                  stride_length_mean - 2 * stride_length_var,
-                                                  stride_length_mean + 2 * stride_length_var);
-        }
-
-        if (walk_speed_var > DBL_EPSILON) {
-            std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, walk_speed_var);
-            walk_speed = boost::algorithm::clamp(walk_speed_distribution(generator),
-                                                 walk_speed_mean - 2 * walk_speed_var,
-                                                 walk_speed_mean + 2 * walk_speed_var);
-        }
-    } else {
-        // uniform sampling
-        if (stride_length_var > DBL_EPSILON) {
-            std::uniform_real_distribution<double>
-                    stride_length_distribution(stride_length_mean - 2 * stride_length_var,
-                                             stride_length_mean + 2 * stride_length_var);
-            stride_length = stride_length_distribution(generator);
-        }
-        if (walk_speed_var > DBL_EPSILON) {
-            std::uniform_real_distribution<double>
-                    walk_speed_distribution(walk_speed_mean - 2 * walk_speed_var,
-                                            walk_speed_mean + 2 * walk_speed_var);
-            walk_speed = walk_speed_distribution(generator);
-        }
-    }
-
-
-
-    if(!(crouch_angle_set.size() == 1 && stride_length_var < DBL_EPSILON && walk_speed_var < DBL_EPSILON))
+    if(walking_param_change) {
+        SampleWalkingParams();
         mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+    }
 
 	if(RSI)
 		t = dart::math::random(0.0,mCharacter->GetBVH()->GetMaxTime()*0.9);
@@ -373,14 +313,14 @@ Eigen::VectorXd
 Environment::
 GetMuscleTorques()
 {
-	int index = 0;
+	int _index = 0;
 	mCurrentMuscleTuple.JtA.setZero();
 	for(auto muscle : mCharacter->GetMuscles())
 	{
 		muscle->Update();
 		Eigen::VectorXd JtA_i = muscle->GetRelatedJtA();
-		mCurrentMuscleTuple.JtA.segment(index,JtA_i.rows()) = JtA_i;
-		index += JtA_i.rows();
+		mCurrentMuscleTuple.JtA.segment(_index,JtA_i.rows()) = JtA_i;
+		_index += JtA_i.rows();
 	}
 	
 	return mCurrentMuscleTuple.JtA;
@@ -452,12 +392,12 @@ GetState()
 	}
 
     if (stride_length_var_vec[crouch_angle_index] > DBL_EPSILON) {
-        double stride_length_normalized = (stride_length - stride_length_mean_vec[crouch_angle_index]) / stride_length_var_vec[crouch_angle_index];
+        double stride_length_normalized = (stride_length - stride_length_mean_vec[crouch_angle_index]) / sqrt(stride_length_var_vec[crouch_angle_index]);
         normalized_walking_parameters.push_back(stride_length_normalized);
     }
 
     if (walk_speed_var_vec[crouch_angle_index] > DBL_EPSILON) {
-        double walk_speed_normalized = (walk_speed - walk_speed_mean_vec[crouch_angle_index]) / walk_speed_var_vec[crouch_angle_index];
+        double walk_speed_normalized = (walk_speed - walk_speed_mean_vec[crouch_angle_index]) / sqrt(walk_speed_var_vec[crouch_angle_index]);
         normalized_walking_parameters.push_back(walk_speed_normalized);
     }
 
@@ -557,11 +497,123 @@ GetReward()
 
 void
 Environment::
+SampleWalkingParams()
+{
+    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    crouch_angle_index = 0;
+    if (crouch_angle_set.size() > 1) {
+        std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size()-1);
+        crouch_angle_index = crouch_angle_distribution(generator);
+    }
+    crouch_angle = crouch_angle_set[crouch_angle_index];
+
+    double stride_length_mean = stride_length_mean_vec[crouch_angle_index];
+    double stride_length_var = stride_length_var_vec[crouch_angle_index];
+    double walk_speed_mean = walk_speed_mean_vec[crouch_angle_index];
+    double walk_speed_var = walk_speed_var_vec[crouch_angle_index];
+    double stride_speed_covar = stride_speed_covar_vec[crouch_angle_index];
+
+    if (sample_param_as_normal) {
+        // normal sampling
+        if (stride_length_var > DBL_EPSILON && walk_speed_var > DBL_EPSILON) {
+            // using multivariate gaussian
+            Eigen::Vector2d mean;
+            mean << stride_length_mean, walk_speed_mean;
+            Eigen::Matrix2d covar;
+            covar << stride_length_var, stride_speed_covar, stride_speed_covar, walk_speed_var;
+
+            Eigen::Vector2d normalized_val;
+            normalized_val.setRandom();
+            normalized_val.normalize();
+            std::normal_distribution<double> normal(0, 1);
+            do {
+                normalized_val *= normal(generator);
+            }
+            while (normalized_val.norm() < 2.4477468307);
+            // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
+                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+
+            Eigen::Vector2d sample = mean + normTransform * normalized_val;
+            stride_length = sample[0];
+            walk_speed = sample[1];
+        }
+
+        else if (stride_length_var > DBL_EPSILON) {
+            std::normal_distribution<double> stride_length_distribution(stride_length_mean, sqrt(stride_length_var));
+            do {
+                stride_length = stride_length_distribution(generator);
+            } while( abs(stride_length - stride_length_mean) < 2*sqrt(stride_length_var) );
+        }
+
+        else if (walk_speed_var > DBL_EPSILON) {
+            std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, sqrt(walk_speed_var));
+            do {
+                walk_speed = walk_speed_distribution(generator);
+            } while( abs(stride_length - stride_length_mean) < 2*sqrt(stride_length_var) );
+        }
+    } else {
+        // uniform sampling
+        if (stride_length_var > DBL_EPSILON && walk_speed_var > DBL_EPSILON) {
+            // using multivariate gaussian
+            Eigen::Vector2d mean;
+            mean << stride_length_mean, walk_speed_mean;
+            Eigen::Matrix2d covar;
+            covar << stride_length_var, stride_speed_covar, stride_speed_covar, walk_speed_var;
+
+            Eigen::Vector2d normalized_val;
+            normalized_val.setRandom();
+            normalized_val.normalize();
+            // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
+            std::uniform_real_distribution<double> uniform(-2.4477468307, 2.4477468307);
+            normalized_val *= uniform(generator);
+
+            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
+                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+
+            Eigen::Vector2d sample = mean + normTransform * normalized_val;
+            stride_length = sample[0];
+            walk_speed = sample[1];
+
+        }
+        else if (stride_length_var > DBL_EPSILON) {
+            std::uniform_real_distribution<double>
+                    stride_length_distribution(stride_length_mean - 2 * sqrt(stride_length_var),
+                                               stride_length_mean + 2 * sqrt(stride_length_var));
+            stride_length = stride_length_distribution(generator);
+        }
+        else if (walk_speed_var > DBL_EPSILON) {
+            std::uniform_real_distribution<double>
+                    walk_speed_distribution(walk_speed_mean - 2 * sqrt(walk_speed_var),
+                                            walk_speed_mean + 2 * sqrt(walk_speed_var));
+            walk_speed = walk_speed_distribution(generator);
+        }
+    }
+}
+
+void
+Environment::
+SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed)
+{
+    crouch_angle = _crouch_angle;
+    stride_length = _stride_length;
+    walk_speed = _walk_speed;
+    walking_param_change = false;
+    mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+    this->Reset(false);
+}
+
+void
+Environment::
 PrintWalkingParamsSampled()
 {
     std::cout << "crouch angle: " << crouch_angle << " degree" << std::endl;
     std::cout << "stride length: " << stride_length << " m" << std::endl;
     std::cout << "walking speed: " << walk_speed << " m/s" << std::endl;
+    std::cout << std::endl;
 }
 
 void
@@ -571,11 +623,11 @@ PrintWalkingParams() {
     for (int i = 0; i < crouch_angle_set.size(); i++) {
         std::cout << "crouch " << crouch_angle_set[i] << std::endl;
         std::cout << "stride length mean: " << stride_length_mean_vec[i] << " m" << std::endl;
-        std::cout << "stride length var: " << stride_length_var_vec[i] << " m" << std::endl;
+        std::cout << "stride length std: " << sqrt(stride_length_var_vec[i]) << " m" << std::endl;
         std::cout << "walking speed mean: " << walk_speed_mean_vec[i] << " m/s" << std::endl;
-        std::cout << "walking speed var: " << walk_speed_var_vec[i] << " m/s" << std::endl;
+        std::cout << "walking speed std: " << sqrt(walk_speed_var_vec[i]) << " m/s" << std::endl;
         if (sample_param_as_normal)
-            std::cout << "stride_speed covar: " << stride_speed_covar_vec[i] << " m/s" << std::endl;
+            std::cout << "stride_speed corel: " << stride_speed_covar_vec[i]/(sqrt(stride_length_var_vec[i])*sqrt(walk_speed_var_vec[i])) << " m/s" << std::endl;
         std::cout << std::endl;
     }
     if (sample_param_as_normal) {

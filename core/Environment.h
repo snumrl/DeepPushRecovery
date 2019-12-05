@@ -56,6 +56,8 @@ public:
 	void SetActivationLevels(const Eigen::VectorXd& a){mActivationLevels = a;}
 	bool GetUseMuscle(){return mUseMuscle;}
 
+	void SampleWalkingParams();
+	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
 	void PrintWalkingParams();
 	void PrintWalkingParamsSampled();
 
@@ -96,6 +98,8 @@ private:
     std::vector<double> walk_speed_var_vec;
     std::vector<double> stride_speed_covar_vec;
     bool sample_param_as_normal;  // if not, uniform sampling
+
+    bool walking_param_change;
 };
 };
 

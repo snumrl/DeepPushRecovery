@@ -243,37 +243,3 @@ GetMuscleTuples()
 
 	return all;
 }
-using namespace boost::python;
-
-BOOST_PYTHON_MODULE(pymss)
-{
-	Py_Initialize();
-	np::initialize();
-
-	class_<EnvManager>("EnvManager",init<std::string,int>())
-		.def("GetNumState",&EnvManager::GetNumState)
-		.def("GetNumAction",&EnvManager::GetNumAction)
-		.def("GetSimulationHz",&EnvManager::GetSimulationHz)
-		.def("GetControlHz",&EnvManager::GetControlHz)
-		.def("GetNumSteps",&EnvManager::GetNumSteps)
-		.def("UseMuscle",&EnvManager::UseMuscle)
-		.def("Step",&EnvManager::Step)
-		.def("Reset",&EnvManager::Reset)
-		.def("IsEndOfEpisode",&EnvManager::IsEndOfEpisode)
-		.def("GetState",&EnvManager::GetState)
-		.def("SetAction",&EnvManager::SetAction)
-		.def("GetReward",&EnvManager::GetReward)
-		.def("Steps",&EnvManager::Steps)
-		.def("StepsAtOnce",&EnvManager::StepsAtOnce)
-		.def("Resets",&EnvManager::Resets)
-		.def("IsEndOfEpisodes",&EnvManager::IsEndOfEpisodes)
-		.def("GetStates",&EnvManager::GetStates)
-		.def("SetActions",&EnvManager::SetActions)
-		.def("GetRewards",&EnvManager::GetRewards)
-		.def("GetNumTotalMuscleRelatedDofs",&EnvManager::GetNumTotalMuscleRelatedDofs)
-		.def("GetNumMuscles",&EnvManager::GetNumMuscles)
-		.def("GetMuscleTorques",&EnvManager::GetMuscleTorques)
-		.def("GetDesiredTorques",&EnvManager::GetDesiredTorques)
-		.def("SetActivationLevels",&EnvManager::SetActivationLevels)
-		.def("GetMuscleTuples",&EnvManager::GetMuscleTuples);
-}

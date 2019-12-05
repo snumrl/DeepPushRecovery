@@ -135,6 +135,12 @@ keyboard(unsigned char _key, int _x, int _y)
 	case 'R': this->Reset(false);break;
     case 'S': this->StepMotion();break;
 	case 'p': mBVHPlaying = !mBVHPlaying;break;
+	case 'm':
+	    int a;
+	    double b, c;
+	    std::cin >> a >> b >> c;
+	    mEnv->SetWalkingParams(a, b, c);
+	    break;
 
 	case 27 : exit(0);break;
 	default:
