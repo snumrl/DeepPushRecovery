@@ -46,7 +46,9 @@ public:
     double GetSimulationTime();
 
     bool IsBodyContact(std::string name);
-
+    void AddBodyExtForce(std::string name, np::ndarray &_force);
+    np::ndarray GetBodyPosition(std::string name);
+    double GetMotionHalfCycleDuration();
 
 private:
 	MASS::Environment* mEnv;

@@ -13,6 +13,32 @@ from Model import *
 from pymss import EnvWrapper
 
 
+class WalkFSM(object):
+    def __init__(self):
+        self.last_sw = 'r'
+        self.step_count = 0
+        self.double = False
+
+    def reset(self):
+        self.last_sw = 'r'
+        self.step_count = 0
+        self.double = False
+
+    def check(self, bool_l, bool_r):
+        if not self.double and bool_l and bool_r:
+            self.double = True
+            self.step_count += 1
+            self.last_sw = 'r' if self.last_sw == 'l' else 'l'
+
+        elif self.double and (not bool_l) and self.last_sw == 'r':
+            self.double = False
+
+        elif self.double and (not bool_r) and self.last_sw == 'l':
+            self.double = False
+
+
+
+
 class PushSim(object):
     def __init__(self, params, metadata_dir, nn_finding_dir=None):
         self.is_muscle, self.is_pushed_during_training, self.is_multi_seg_foot, self.is_walking_variance, self.is_walking_param_normal_trained, self.crouch = \
@@ -55,6 +81,16 @@ class PushSim(object):
             self.muscle_nn_module = MuscleNN(num_total_muscle_related_dofs, num_actions, num_muscles)
             self.muscle_nn_module.load(nn_dir + '/max_muscle.pt')
 
+        self.walk_fsm = WalkFSM()
+        self.push_step = 8
+        self.push_duration = .2
+        self.push_force = 50.
+        self.push_start_timing = 50.
+
+        self.step_length_ratio = 1.
+        self.walk_speed_ratio = 1.
+        self.duration_ratio = 1.
+
     def GetActionFromNN(self):
         return self.nn_module.get_action(self.env.GetState())
 
@@ -85,15 +121,79 @@ class PushSim(object):
         self.env.PrintWalkingParamsSampled()
 
     def simulate(self):
-        for i in range(40):
+        info_start_time = 0.
+        info_root_pos = []
+        info_left_foot_pos = []
+        info_right_foot_pos = []
+
+        push_start_time = 30.
+        push_end_time = 0.
+        walking_dir = np.zeros(3)
+
+        while True:
+            bool_l = self.env.IsBodyContact("TalusL")
+            bool_r = self.env.IsBodyContact("TalusR")
+            last_step_count = self.walk_fsm.step_count
+            self.walk_fsm.check(bool_l, bool_r)
+
+            if last_step_count == 3 and self.walk_fsm.step_count == 4:
+                info_start_time = self.env.GetSimulationTime()
+                info_root_pos.append(self.env.GetBodyPosition("Pelvis"))
+                if self.walk_fsm.last_sw == 'r':
+                    info_right_foot_pos.append(self.env.GetBodyPosition("TalusR"))
+                elif self.walk_fsm.last_sw == 'l':
+                    info_left_foot_pos.append(self.env.GetBodyPosition("TalusL"))
+
+            if last_step_count == 4 and self.walk_fsm.step_count == 5:
+                info_root_pos.append(self.env.GetBodyPosition("Pelvis"))
+                if self.walk_fsm.last_sw == 'r':
+                    info_right_foot_pos.append(self.env.GetBodyPosition("TalusR"))
+                elif self.walk_fsm.last_sw == 'l':
+                    info_left_foot_pos.append(self.env.GetBodyPosition("TalusL"))
+
+            if last_step_count == 5 and self.walk_fsm.step_count == 6:
+                info_root_pos.append(self.env.GetBodyPosition("Pelvis"))
+                if self.walk_fsm.last_sw == 'r':
+                    info_right_foot_pos.append(self.env.GetBodyPosition("TalusR"))
+                elif self.walk_fsm.last_sw == 'l':
+                    info_left_foot_pos.append(self.env.GetBodyPosition("TalusL"))
+
+            if last_step_count == 6 and self.walk_fsm.step_count == 7:
+                info_root_pos.append(self.env.GetBodyPosition("Pelvis"))
+                if self.walk_fsm.last_sw == 'r':
+                    info_right_foot_pos.append(self.env.GetBodyPosition("TalusR"))
+                elif self.walk_fsm.last_sw == 'l':
+                    info_left_foot_pos.append(self.env.GetBodyPosition("TalusL"))
+
+            if last_step_count == 7 and self.walk_fsm.step_count == 8:
+                info_root_pos.append(self.env.GetBodyPosition("Pelvis"))
+                if self.walk_fsm.last_sw == 'r':
+                    info_right_foot_pos.append(self.env.GetBodyPosition("TalusR"))
+                elif self.walk_fsm.last_sw == 'l':
+                    info_left_foot_pos.append(self.env.GetBodyPosition("TalusL"))
+
+                push_start_time = self.env.GetSimulationTime() + (self.push_start_timing/100.) * self.env.GetMotionHalfCycleDuration()
+                push_end_time = push_start_time + self.push_duration
+
+            if push_start_time <= self.env.GetSimulationTime() <= push_end_time:
+                self.env.AddBodyExtForce("ShoulderL", np.array([self.push_force, 0., 0.]))
+
+            if self.env.GetSimulationTime() >= push_start_time + 10.:
+                break
+
             self.step()
-            print(self.env.GetSimulationTime())
-        raise NotImplementedError
 
     def setParamedStepParams(self, crouch_angle, step_length_ratio, walk_speed_ratio):
+        self.step_length_ratio = step_length_ratio
+        self.walk_speed_ratio = walk_speed_ratio
+        self.duration_ratio = step_length_ratio / walk_speed_ratio
         self.env.SetWalkingParams(int(crouch_angle), step_length_ratio, walk_speed_ratio)
 
     def setPushParams(self, push_step, push_duration, push_force, push_start_timing):
+        self.push_step = push_step
+        self.push_duration = push_duration
+        self.push_force = push_force
+        self.push_start_timing = push_start_timing
         self.env.SetPushParams(push_step, push_duration, push_force, push_start_timing)
 
     def getPushedLength(self):

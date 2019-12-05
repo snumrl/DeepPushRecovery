@@ -188,3 +188,24 @@ IsBodyContact(std::string name)
     mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)
     );
 }
+
+void
+EnvWrapper::
+AddBodyExtForce(std::string name, np::ndarray &_force)
+{
+    mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)->addExtForce(toEigenVector(_force));
+}
+
+np::ndarray
+EnvWrapper::
+GetBodyPosition(std::string name)
+{
+    Eigen::VectorXd translation = mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)->getTransform().translation();
+    return toNumPyArray(translation);
+}
+double
+EnvWrapper::
+GetMotionHalfCycleDuration()
+{
+    return mEnv->GetCharacter()->GetBVH()->GetMaxTime()/2.;
+}
