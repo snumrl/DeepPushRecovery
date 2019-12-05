@@ -106,7 +106,7 @@ LoadBVH(const std::string& path,bool cyclic)
 }
 void
 Character::
-GenerateBvhForPushExp(long crouch_angle, double step_length, double walk_speed)
+GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed)
 {
     //execute python code
     char fifo_name[256];
@@ -117,7 +117,7 @@ GenerateBvhForPushExp(long crouch_angle, double step_length, double walk_speed)
     char sh_script[256];
     sprintf(sh_script,
             (std::string("python3 ")+std::string(MASS_ROOT_DIR)+std::string("/python/pushrecoverybvhgenerator/bvh_generator_server.py %s %ld %lf %lf &")).c_str(),
-            fifo_name, crouch_angle, step_length, walk_speed);
+            fifo_name, crouch_angle, stride_length, walk_speed);
     system(sh_script);
 
     mknod(fifo_name, S_IFIFO | 0666, 0);

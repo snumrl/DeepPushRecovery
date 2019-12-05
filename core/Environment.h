@@ -85,16 +85,16 @@ private:
     int index;
 
     int crouch_angle;
-    double step_length;
+    double stride_length;
     double walk_speed;
 
     int crouch_angle_index;
     std::vector<int> crouch_angle_set;
-    std::vector<double> step_length_mean_vec;
-    std::vector<double> step_length_var_vec;
+    std::vector<double> stride_length_mean_vec;
+    std::vector<double> stride_length_var_vec;
     std::vector<double> walk_speed_mean_vec;
     std::vector<double> walk_speed_var_vec;
-    std::vector<double> step_speed_covar_vec;
+    std::vector<double> stride_speed_covar_vec;
     bool sample_param_as_normal;  // if not, uniform sampling
 };
 };
