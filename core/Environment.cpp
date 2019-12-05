@@ -552,7 +552,7 @@ SampleWalkingParams()
             std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, sqrt(walk_speed_var));
             do {
                 walk_speed = walk_speed_distribution(generator);
-            } while( abs(stride_length - stride_length_mean) < 2*sqrt(stride_length_var) );
+            } while( abs(walk_speed - walk_speed_mean) < 2*sqrt(walk_speed_var) );
         }
     } else {
         // uniform sampling
