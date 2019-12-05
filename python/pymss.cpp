@@ -60,6 +60,9 @@ BOOST_PYTHON_MODULE(pymss)
         .def("SetActivationLevels",&EnvWrapper::SetActivationLevels)
         .def("GetMuscleTuples",&EnvWrapper::GetMuscleTuples)
         .def("SetWalkingParams", &EnvWrapper::SetWalkingParams)
+        .def("SetPushParams", &EnvWrapper::SetPushParams)
         .def("PrintWalkingParams", &EnvWrapper::PrintWalkingParams)
-        .def("PrintWalkingParamsSampled", &EnvWrapper::PrintWalkingParamsSampled);
+        .def("PrintWalkingParamsSampled", &EnvWrapper::PrintWalkingParamsSampled)
+
+        .def("GetSimulationTime", &EnvWrapper::GetSimulationTime);
 }

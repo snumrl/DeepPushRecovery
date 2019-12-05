@@ -165,3 +165,26 @@ SetWalkingParams(int crouch_angle, double stride_length, double walk_speed)
 {
     mEnv->SetWalkingParams(crouch_angle, stride_length, walk_speed);
 }
+
+void
+EnvWrapper::
+SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing)
+{
+    mEnv->SetPushParams(_push_step, _push_duration, _push_force, _push_start_timing);
+}
+
+double
+EnvWrapper::
+GetSimulationTime()
+{
+    return mEnv->GetWorld()->getTime();
+}
+
+bool
+EnvWrapper::
+IsBodyContact(std::string name)
+{
+    return mEnv->GetWorld()->getLastCollisionResult().inCollision(
+    mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)
+    );
+}

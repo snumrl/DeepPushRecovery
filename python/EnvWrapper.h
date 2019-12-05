@@ -38,9 +38,16 @@ public:
 	
 	p::list GetMuscleTuples();
 
+    // for push experiments
 	void SetWalkingParams(int crouch_angle, double stride_length, double walk_speed);
-    void PrintWalkingParams();
+	void SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing);
+	void PrintWalkingParams();
     void PrintWalkingParamsSampled();
+    double GetSimulationTime();
+
+    bool IsBodyContact(std::string name);
+
+
 private:
 	MASS::Environment* mEnv;
 };

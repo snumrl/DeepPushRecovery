@@ -30,6 +30,12 @@ Environment()
     stride_speed_covar_vec.clear();
     sample_param_as_normal = false;
     walking_param_change = false;
+
+    push_enable = false;
+    push_step = 8;
+    push_duration = .2;
+    push_force = 50.;
+    push_start_timing = 50.;
 }
 
 Environment::
@@ -49,6 +55,12 @@ Environment(int _index)
     stride_speed_covar_vec.clear();
     sample_param_as_normal = false;
     walking_param_change = false;
+
+    push_enable = false;
+    push_step = 8;
+    push_duration = .2;
+    push_force = 50.;
+    push_start_timing = 50.;
 }
 
 
@@ -604,6 +616,16 @@ SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed)
     walking_param_change = false;
     mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
     this->Reset(false);
+}
+void
+Environment::
+SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing)
+{
+    push_step = _push_step;
+    push_duration = _push_duration;
+    push_force = _push_force;
+    push_start_timing = _push_start_timing;
+    push_enable = true;
 }
 
 void

@@ -56,8 +56,10 @@ public:
 	void SetActivationLevels(const Eigen::VectorXd& a){mActivationLevels = a;}
 	bool GetUseMuscle(){return mUseMuscle;}
 
+    // push experiments
 	void SampleWalkingParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
+    void SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing);
 	void PrintWalkingParams();
 	void PrintWalkingParamsSampled();
 
@@ -100,6 +102,12 @@ private:
     bool sample_param_as_normal;  // if not, uniform sampling
 
     bool walking_param_change;
+
+    bool push_enable;
+    int push_step;
+    double push_duration;
+    double push_force;
+    double push_start_timing;
 };
 };
 
