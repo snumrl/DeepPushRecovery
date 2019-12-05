@@ -145,7 +145,7 @@ Character::
 Reset()
 {
 	mTc = mBVH->GetT0();
-	mTc.translation()[1] -= 1.015;
+	mTc.translation()[1] -= 1.005;
     // mTc.translation()[1] = 0.0;
 }
 void
