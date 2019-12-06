@@ -57,6 +57,7 @@ public:
 	bool GetUseMuscle(){return mUseMuscle;}
 
     // push experiments
+    bool HasCrouchVariation(){return crouch_angle_set.size() > 1;}
 	void SampleWalkingParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
     void SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing);

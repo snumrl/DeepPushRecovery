@@ -115,6 +115,11 @@ class PPO(object):
         self.max_return_epoch = 1
         self.tic = time.time()
 
+        # for push experiments
+        self.has_crouch_variation = self.env.HasCrouchVariation()
+        self.current_return_sum_each_crouch_angle = [0., 0., 0., 0.]
+        self.last_return_sum_each_crouch_angle = [0., 0., 0., 0.]
+
         self.episodes = [None]*self.num_slaves
         for j in range(self.num_slaves):
             self.episodes[j] = EpisodeBuffer()
@@ -169,6 +174,7 @@ class PPO(object):
         muscle_tuples = self.env.GetMuscleTuples()
         for i in range(len(muscle_tuples)):
             self.muscle_buffer.Push(muscle_tuples[i][0],muscle_tuples[i][1],muscle_tuples[i][2],muscle_tuples[i][3])
+
     def GenerateTransitions(self):
         self.total_episodes = []
         states = [None]*self.num_slaves
@@ -213,13 +219,13 @@ class PPO(object):
                     self.episodes[j].Push(states[j], actions[j], rewards[j], values[j], logprobs[j])
                     local_step += 1
 
-                if terminated_state or (nan_occur is True):
-                    if (nan_occur is True):
+                if terminated_state or nan_occur:
+                    if nan_occur:
                         self.episodes[j].Pop()
                     self.total_episodes.append(self.episodes[j])
                     self.episodes[j] = EpisodeBuffer()
 
-                    self.env.Reset(True,j)
+                    self.env.Reset(True, j)
 
             if local_step >= self.buffer_size:
                 break
@@ -322,9 +328,8 @@ class PPO(object):
         h = int((time.time() - self.tic)//3600.0)
         m = int((time.time() - self.tic)//60.0)
         s = int((time.time() - self.tic))
+        s = s - m*60
         m = m - h*60
-        s = int((time.time() - self.tic))
-        s = s - h*3600 - m*60
         if self.num_episode is 0:
             self.num_episode = 1
         if self.num_tuple is 0:
@@ -404,7 +409,7 @@ if __name__=="__main__":
     else:
         ppo.SaveModel()
     print('num states: {}, num actions: {}'.format(ppo.env.GetNumState(),ppo.env.GetNumAction()))
-    for i in range(ppo.max_iteration-5):
+    for _i in range(ppo.max_iteration-5):
         ppo.Train()
         rewards = ppo.Evaluate()
     # Plot(rewards,'reward',0,False)

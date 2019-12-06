@@ -361,7 +361,7 @@ IsEndOfEpisode()
 	Eigen::VectorXd v = mCharacter->GetSkeleton()->getVelocities();
 
 	double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
-	if(root_y < 0.8)
+	if(root_y < 0.9)
 		isTerminal =true;
 	else if (dart::math::isNan(p) || dart::math::isNan(v))
 		isTerminal =true;

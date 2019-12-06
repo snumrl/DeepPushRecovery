@@ -1,10 +1,10 @@
 #ifndef __MASS_CHARACTER_H__
 #define __MASS_CHARACTER_H__
 #include "dart/dart.hpp"
+#include "BVH.h"
 
 namespace MASS
 {
-class BVH;
 class Muscle;
 class Character
 {

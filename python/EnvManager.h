@@ -39,6 +39,10 @@ public:
 	void SetActivationLevels(np::ndarray np_array);
 	
 	p::list GetMuscleTuples();
+
+	// for push experi
+    bool HasCrouchVariation(){return mEnvs[0]->HasCrouchVariation();}
+
 private:
 	std::vector<MASS::Environment*> mEnvs;
 

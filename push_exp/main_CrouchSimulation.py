@@ -78,35 +78,38 @@ def worker_simulation(sim, param):
 
     stopcode = sim.simulate()
     # stopcode = 0
-    
-    pushed_length = sim.getPushedLength()
-    pushed_steps = sim.getPushedStep()
-    push_strength = abs(push_force * push_duration / weight)
-    step_length = sim.getStepLength()
-    walking_speed = sim.getWalkingSpeed()
-    halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
-    
-    distance = pushed_length * 1000.
-    speed = walking_speed * 1000.
-    force = push_strength * 1000.
-    stride = step_length * 1000.
-    duration = halfcycle_duration
-    start_timing_time_ic = sim.start_timing_time_ic
-    mid_timing_time_ic = sim.mid_timing_time_ic
-    start_timing_foot_ic = sim.getStartTimingFootIC()
-    mid_timing_foot_ic = sim.getMidTimingFootIC()
-    start_timing_time_fl = sim.getStartTimingTimeFL()
-    mid_timing_time_fl = sim.getMidTimingTimeFL()
-    start_timing_foot_fl = sim.getStartTimingFootFL()
-    mid_timing_foot_fl = sim.getMidTimingFootFL()
 
-    halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
+    if sim.valid:
+        pushed_length = sim.getPushedLength()
+        pushed_steps = sim.getPushedStep()
+        push_strength = abs(push_force * push_duration / weight)
+        step_length = sim.getStepLength()
+        walking_speed = sim.getWalkingSpeed()
+        halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
 
-    q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
-           start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
-           start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
-           step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
-           stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
+        print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
+
+        distance = pushed_length * 1000.
+        speed = walking_speed * 1000.
+        force = push_strength * 1000.
+        stride = step_length * 1000.
+        duration = halfcycle_duration
+        start_timing_time_ic = sim.start_timing_time_ic
+        mid_timing_time_ic = sim.mid_timing_time_ic
+        start_timing_foot_ic = sim.getStartTimingFootIC()
+        mid_timing_foot_ic = sim.getMidTimingFootIC()
+        start_timing_time_fl = sim.getStartTimingTimeFL()
+        mid_timing_time_fl = sim.getMidTimingTimeFL()
+        start_timing_foot_fl = sim.getStartTimingFootFL()
+        mid_timing_foot_fl = sim.getMidTimingFootFL()
+
+        halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
+
+        q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
+               start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
+               start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
+               step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
+               stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
 
 
 def write_start(csvfilepath):
@@ -180,7 +183,7 @@ def simulate(sim, launch_order):
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
 
-        num = 2
+        num = 100
     
 
     #=======================================================================
@@ -264,7 +267,7 @@ def simulate(sim, launch_order):
     for i in range(len(test_params)):
         test_params[i][0] = abs(test_params[i][0])
         test_params[i][2] = abs(test_params[i][2])
-        test_params[i][3] = -abs(test_params[i][3])
+        test_params[i][3] = abs(test_params[i][3])
         
     print(test_params)
 
@@ -352,7 +355,14 @@ if __name__ == '__main__':
     _is_multi_seg_foot = False
     _is_walking_variance = True
     _is_walking_param_normal_trained = False
-    _crouch = input('crouch angle(0, 20, 30, 60, all)? ')
+    # _crouch = input('crouch angle(0, 20, 30, 60, all)? ')
+    _crouch = 'all'
     _params = (_is_muscle, _is_pushed_during_training, _is_multi_seg_foot, _is_walking_variance, _is_walking_param_normal_trained, _crouch)
 
-    simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), [0, 20, 30, 60].index(int(_crouch)))
+    if _crouch == "all":
+        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 0)
+        simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 1)
+        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 2)
+        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 3)
+    else:
+        simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), [0, 20, 30, 60].index(int(_crouch)))

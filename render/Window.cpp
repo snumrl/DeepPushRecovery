@@ -22,7 +22,7 @@ Window(Environment* env)
 	mBackground[2] = 1.0;
 	mBackground[3] = 1.0;
 	SetFocusing();
-	mZoom = 0.25;	
+	mZoom = 0.1;
 	mFocus = false;
 	mNNLoaded = false;
 
@@ -183,22 +183,27 @@ Step()
 		action = Eigen::VectorXd::Zero(mEnv->GetNumAction());
 	mEnv->SetAction(action);
 
+//	std::cout << mEnv->GetCharacter()->GetSkeleton()->getBodyNode(0)->getTransform().translation() << std::endl;
+
 	if(mEnv->GetUseMuscle())
 	{
 		int inference_per_sim = 2;
 		for(int i=0;i<num;i+=inference_per_sim){
 			Eigen::VectorXd mt = mEnv->GetMuscleTorques();
 			mEnv->SetActivationLevels(GetActivationFromNN(mt));
-			for(int j=0;j<inference_per_sim;j++)
-				mEnv->Step();
-		}	
+			for(int j=0;j<inference_per_sim;j++){
+                mEnv->Step();
+			}
+		}
 	}
 	else
 	{
-		for(int i=0;i<num;i++)
-			mEnv->Step();	
+		for(int i=0;i<num;i++) {
+		    if (mEnv->GetCharacter()->GetSkeleton()->getBodyNode("Pelvis")->getTransform().translation()[1] < 0.3)
+                std::cout << mEnv->GetWorld()->getTime() << std::endl;
+            mEnv->Step();
+        }
 	}
-	
 }
 void
 Window::

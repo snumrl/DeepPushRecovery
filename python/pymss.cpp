@@ -38,6 +38,7 @@ BOOST_PYTHON_MODULE(pymss)
         .def("GetMuscleTorques",&EnvManager::GetMuscleTorques)
         .def("GetDesiredTorques",&EnvManager::GetDesiredTorques)
         .def("SetActivationLevels",&EnvManager::SetActivationLevels)
+        .def("HasCrouchVariation",&EnvManager::HasCrouchVariation)
         .def("GetMuscleTuples",&EnvManager::GetMuscleTuples);
 
     class_<EnvWrapper>("EnvWrapper",init<std::string>())
