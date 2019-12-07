@@ -6,6 +6,7 @@
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 
+using MASS::PushSim;
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(pypushexp)
@@ -13,7 +14,8 @@ BOOST_PYTHON_MODULE(pypushexp)
     Py_Initialize();
     np::initialize();
 
-    class_<PushSim>("PushSim",init<const std::string &, const std::string &>())
+    class_<PushSim>("PushSim",init<std::string, std::string>())
+        .def(init<std::string, std::string, std::string>())
         .def("simulate", &PushSim::simulate)
         .def("setParamedStepParams", &PushSim::setParamedStepParams)
         .def("setPushParams", &PushSim::setPushParams)

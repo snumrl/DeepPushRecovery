@@ -7,8 +7,9 @@ import csv
 import socket
 import datetime
 import math
+import glob
 
-from pushsim import PushSim
+from pypushexp import PushSim
 
 #    # input - [recorded item]
 #    [weight] : 48
@@ -359,10 +360,35 @@ if __name__ == '__main__':
     _crouch = 'all'
     _params = (_is_muscle, _is_pushed_during_training, _is_multi_seg_foot, _is_walking_variance, _is_walking_param_normal_trained, _crouch)
 
-    if _crouch == "all":
-        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 0)
-        simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 1)
-        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 2)
-        # simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), 3)
+    option = ''
+    option += 'muscle_' if _is_muscle else 'torque_'
+    option += 'push_' if _is_pushed_during_training else 'nopush_'
+    option += 'msf_' if _is_multi_seg_foot else 'sf_'
+
+    assert _crouch in ['0', '20', '30', '60', 'all']
+    if _crouch != 'all':
+        option += 'crouch'
+    option += _crouch
+    option += '_mean'
+    if _is_walking_variance:
+        option += '_var_'
+        option += 'normal' if _is_walking_param_normal_trained else 'uniform'
+
+    nn_dir = None
+    if _nn_finding_dir is not None:
+        nn_dir = glob.glob(_nn_finding_dir + option)[0]
+    meta_file = _metadata_dir + option + '.txt'
+
+    sim = None
+    if _is_muscle:
+        sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
     else:
-        simulate(PushSim(_params, _metadata_dir, _nn_finding_dir), [0, 20, 30, 60].index(int(_crouch)))
+        sim = PushSim(meta_file, nn_dir+'/max.pt')
+
+    if _crouch == "all":
+        simulate(sim, 0)
+        simulate(sim, 1)
+        simulate(sim, 2)
+        simulate(sim, 3)
+    else:
+        simulate(sim, [0, 20, 30, 60].index(int(_crouch)))

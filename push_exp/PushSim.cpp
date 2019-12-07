@@ -4,6 +4,7 @@
 
 #include "PushSim.h"
 
+using MASS::WalkFSM;
 using MASS::PushSim;
 using MASS::Environment;
 
@@ -21,6 +22,47 @@ static np::ndarray toNumPyArray(const Eigen::VectorXd& vec)
     }
 
     return array;
+}
+
+static double calculate_distance_to_line(const Eigen::Vector3d &point, const Eigen::Vector3d &line_unit_vec, const Eigen::Vector3d &point_on_line) {
+    Eigen::Vector3d point_vec = point - point_on_line;
+    Eigen::Vector3d point_vec_perp = point_vec - point_vec.dot(line_unit_vec) * line_unit_vec;
+    return point_vec_perp.norm();
+}
+
+WalkFSM::
+WalkFSM()
+{
+    reset();
+}
+
+void
+WalkFSM::
+reset()
+{
+    this->is_last_sw_r = true;
+    this->step_count = 0;
+    this->is_double_st = false;
+}
+
+void
+WalkFSM::
+check(bool bool_l, bool bool_r)
+{
+    if (!this->is_double_st && bool_l && bool_r)
+    {
+        this->is_double_st = true;
+        this->step_count += 1;
+        this->is_last_sw_r = !(this->is_last_sw_r);
+    }
+    else if ( this->is_double_st && !bool_l && this->is_last_sw_r)
+    {
+        this->is_double_st = false;
+    }
+    else if ( this->is_double_st && !bool_r && !(this->is_last_sw_r))
+    {
+        this->is_double_st = false;
+    }
 }
 
 PushSim::
@@ -59,7 +101,7 @@ PushSim(const std::string &meta_file, const std::string& nn_path)
     p::object load = nn_module.attr("load");
     load(nn_path);
 
-    this->walk_fsm = WalkFSM();
+    this->walk_fsm.reset();
     this->push_step = 8;
     this->push_duration = .2;
     this->push_force = 50.;
@@ -224,7 +266,7 @@ simulate(){
     this->pushed_step = 0;
     this->pushed_length = 0;
 
-    this->valid = frue;
+    this->valid = true;
 
     this->walk_fsm.reset();
 
@@ -232,10 +274,10 @@ simulate(){
     this->max_detour_step_count = 0;
 
     while (true) {
-        bool bool_l = this->mEnv->IsBodyContact("TalusL") or this->mEnv->IsBodyContact("FootThumbL") or
-                 this->mEnv->IsBodyContact("FootPinkyL");
-        bool bool_r = this->mEnv->IsBodyContact("TalusR") or this->mEnv->IsBodyContact("FootThumbR") or
-                 this->mEnv->IsBodyContact("FootPinkyR");
+        bool bool_l = this->IsBodyContact("TalusL") || this->IsBodyContact("FootThumbL")
+                 || this->IsBodyContact("FootPinkyL");
+        bool bool_r = this->IsBodyContact("TalusR") || this->IsBodyContact("FootThumbR")
+                 || this->IsBodyContact("FootPinkyR");
         int last_step_count = this->walk_fsm.step_count;
         this->walk_fsm.check(bool_l, bool_r);
 
@@ -244,37 +286,37 @@ simulate(){
         }
 
         if(last_step_count == 3 && this->walk_fsm.step_count == 4) {
-            this->info_start_time = this->mEnv->GetSimulationTime();
-            this->info_root_pos.push_back(this->mEnv->GetBodyPosition("Pelvis"));
+            this->info_start_time = this->GetSimulationTime();
+            this->info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
             this->info_root_pos[0][1] = 0.;
-            if (this->walk_fsm.last_sw == 'r')
-                this->info_right_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusR"));
-            else if (this->walk_fsm.last_sw == 'l')
-                this->info_left_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusL"));
+            if (this->walk_fsm.is_last_sw_r)
+                this->info_right_foot_pos.push_back(this->GetBodyPosition("TalusR"));
+            else
+                this->info_left_foot_pos.push_back(this->GetBodyPosition("TalusL"));
         }
 
         if(last_step_count == 4 and this->walk_fsm.step_count == 5) {
             // info_root_pos.push_back(this->mEnv->GetBodyPosition("Pelvis"))
-            if (this->walk_fsm.last_sw == 'r')
-                this->info_right_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusR"));
-            else if (this->walk_fsm.last_sw == 'l')
-                this->info_left_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusL"));
+            if (this->walk_fsm.is_last_sw_r)
+                this->info_right_foot_pos.push_back(this->GetBodyPosition("TalusR"));
+            else
+                this->info_left_foot_pos.push_back(this->GetBodyPosition("TalusL"));
         }
 
         if(last_step_count == 5 and this->walk_fsm.step_count == 6) {
             // info_root_pos.push_back(this->mEnv->GetBodyPosition("Pelvis"))
-            if (this->walk_fsm.last_sw == 'r')
-                this->info_right_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusR"));
-            else if (this->walk_fsm.last_sw == 'l')
-                this->info_left_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusL"));
+            if (this->walk_fsm.is_last_sw_r)
+                this->info_right_foot_pos.push_back(this->GetBodyPosition("TalusR"));
+            else
+                this->info_left_foot_pos.push_back(this->GetBodyPosition("TalusL"));
         }
 
         if(last_step_count == 6 and this->walk_fsm.step_count == 7) {
             // info_root_pos.push_back(this->mEnv->GetBodyPosition("Pelvis"))
-            if (this->walk_fsm.last_sw == 'r')
-                this->info_right_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusR"));
-            else if (this->walk_fsm.last_sw == 'l')
-                this->info_left_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusL"));
+            if (this->walk_fsm.is_last_sw_r)
+                this->info_right_foot_pos.push_back(this->GetBodyPosition("TalusR"));
+            else
+                this->info_left_foot_pos.push_back(this->GetBodyPosition("TalusL"));
         }
 
         if(last_step_count == 7 and this->walk_fsm.step_count == 8) {
@@ -283,15 +325,14 @@ simulate(){
             this->info_end_time = this->GetSimulationTime();
             this->info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
             this->info_root_pos[1][1] = 0.;
-            if (this->walk_fsm.last_sw == 'r')
-                this->info_right_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusR"));
-            else if (this->walk_fsm.last_sw == 'l')
-                this->info_left_foot_pos.push_back(this->mEnv->GetBodyPosition("TalusL"));
-            20, 0.807417, 0.930071, 3.1266666666667;
+            if (this->walk_fsm.is_last_sw_r)
+                this->info_right_foot_pos.push_back(this->GetBodyPosition("TalusR"));
+            else
+                this->info_left_foot_pos.push_back(this->GetBodyPosition("TalusL"));
 
             this->walking_dir = this->info_root_pos[1] - this->info_root_pos[0];
             this->walking_dir[1] = 0.;
-            this->walking_dir /= np.linalg.norm(this->walking_dir);
+            this->walking_dir.normalize();
 
             this->push_start_time = this->GetSimulationTime() +
                                     (this->push_start_timing / 100.) * this->GetMotionHalfCycleDuration();
@@ -312,8 +353,8 @@ simulate(){
         if (this->GetSimulationTime() >= this->push_start_time + 10.)
             break;
 
-        if (this->mEnv->GetBodyPosition("Pelvis")[1] < 0.3) {
-            std::cout << "fallen at " << this->walk_fsm.step_count << this->mEnv->GetSimulationTime() << 's' << std::endl;
+        if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
+            std::cout << "fallen at " << this->walk_fsm.step_count << this->GetSimulationTime() << 's' << std::endl;
             this->valid = false;
             break;
         }
@@ -330,10 +371,10 @@ simulate(){
 void
 PushSim::
 setParamedStepParams(int _crouch_angle, double _step_length_ratio, double _walk_speed_ratio){
-    this->step_length_ratio = step_length_ratio;
-    this->walk_speed_ratio = walk_speed_ratio;
-    this->duration_ratio = step_length_ratio / walk_speed_ratio;
-    this->mEnv->SetWalkingParams((int)_crouch_angle), _step_length_ratio, _walk_speed_ratio);
+    this->step_length_ratio = _step_length_ratio;
+    this->walk_speed_ratio = _walk_speed_ratio;
+    this->duration_ratio = _step_length_ratio / _walk_speed_ratio;
+    this->mEnv->SetWalkingParams((int)_crouch_angle, _step_length_ratio, _walk_speed_ratio);
 
 }
 
@@ -362,26 +403,32 @@ getPushedStep(){
 double
 PushSim::
 getStepLength(){
-    sum_stride_length = 0.;
-    stride_info_num = 0;
-    for info_foot_pos in [this->info_right_foot_pos, this->info_left_foot_pos]
-            {}
-    for i in range(len(info_foot_pos)-1):
-    stride_vec = info_foot_pos[i+1] - info_foot_pos[i];
-    stride_vec[1] = 0.;
-    sum_stride_length += np.linalg.norm(stride_vec);
-    stride_info_num += 1;
+    double sum_stride_length = 0.;
+    int stride_info_num = 0;
 
-    return sum_stride_length/stride_info_num;
+    for(int i=0; i< this->info_left_foot_pos.size()-1; i++) {
+        Eigen::Vector3d stride_vec = info_left_foot_pos[i + 1] - info_left_foot_pos[i];
+        stride_vec[1] = 0.;
+        sum_stride_length += stride_vec.norm();
+        stride_info_num += 1;
+    }
+
+    for(int i=0; i< this->info_right_foot_pos.size()-1; i++) {
+        Eigen::Vector3d stride_vec = info_right_foot_pos[i + 1] - info_right_foot_pos[i];
+        stride_vec[1] = 0.;
+        sum_stride_length += stride_vec.norm();
+        stride_info_num += 1;
+    }
+
+    return sum_stride_length / stride_info_num;
 }
 
 double
 PushSim::
 getWalkingSpeed(){
-    walking_vec = this->info_root_pos[1] - this->info_root_pos[0];
+    Eigen::Vector3d walking_vec = this->info_root_pos[1] - this->info_root_pos[0];
     walking_vec[1] = 0.;
-    distance = np.linalg.norm(walking_vec);
-    return distance/(this->info_end_time-this->info_start_time);
+    return walking_vec.norm() / (this->info_end_time - this->info_start_time);
 }
 
 double

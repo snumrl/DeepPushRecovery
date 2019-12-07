@@ -14,6 +14,18 @@ namespace p = boost::python;
 namespace np = boost::python::numpy;
 
 namespace MASS {
+    class WalkFSM {
+    public:
+        WalkFSM();
+        void reset();
+        void check(bool bool_l, bool bool_r);
+
+        bool is_last_sw_r;
+        int step_count;
+        bool is_double_st;
+    };
+
+
     class PushSim {
     public:
         PushSim(const std::string &meta_file, const std::string &nn_path);
@@ -73,6 +85,8 @@ namespace MASS {
 
         double max_detour_length;
         int max_detour_step_count;
+
+        WalkFSM walk_fsm;
 
         int push_step;
         double push_duration;
