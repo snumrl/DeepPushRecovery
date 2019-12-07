@@ -73,14 +73,14 @@ def worker_simulation(sim, param):
     push_step, push_duration,\
                        crouch_angle, step_length_ratio, walk_speed_ratio, push_force, push_start_timing, crouch_label,\
                        weight, height, ith, q = param
-                       
-    sim.setParamedStepParams(crouch_angle, step_length_ratio, walk_speed_ratio)
+
+    sim.setParamedStepParams(int(crouch_angle), step_length_ratio, walk_speed_ratio)
     sim.setPushParams(push_step, push_duration, push_force, push_start_timing)
 
     stopcode = sim.simulate()
     # stopcode = 0
 
-    if sim.valid:
+    if sim.IsValid():
         pushed_length = sim.getPushedLength()
         pushed_steps = sim.getPushedStep()
         push_strength = abs(push_force * push_duration / weight)
@@ -95,8 +95,10 @@ def worker_simulation(sim, param):
         force = push_strength * 1000.
         stride = step_length * 1000.
         duration = halfcycle_duration
-        start_timing_time_ic = sim.start_timing_time_ic
-        mid_timing_time_ic = sim.mid_timing_time_ic
+        # start_timing_time_ic = sim.start_timing_time_ic
+        # mid_timing_time_ic = sim.mid_timing_time_ic
+        start_timing_time_ic = 0.
+        mid_timing_time_ic = 0.
         start_timing_foot_ic = sim.getStartTimingFootIC()
         mid_timing_foot_ic = sim.getMidTimingFootIC()
         start_timing_time_fl = sim.getStartTimingTimeFL()
@@ -184,7 +186,7 @@ def simulate(sim, launch_order):
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
 
-        num = 100
+        num = 2
     
 
     #=======================================================================

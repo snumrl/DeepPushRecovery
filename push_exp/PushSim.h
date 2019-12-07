@@ -33,6 +33,7 @@ namespace MASS {
         ~PushSim();
 
         void Step();
+        void PushStep();
         void Reset(bool RSI = true);
 
         Eigen::VectorXd GetActionFromNN();
@@ -44,6 +45,7 @@ namespace MASS {
         bool mMuscleNNLoaded;
 
         void simulate();
+        void simulatePrepare();
         void setParamedStepParams(int crouch_angle, double step_length_ratio, double walk_speed_ratio);
         void setPushParams(int push_step, double push_duration, double push_force, double push_start_timing);
         double getPushedLength();
@@ -67,6 +69,7 @@ namespace MASS {
         void AddBodyExtForce(const std::string &name, const Eigen::Vector3d &_force);
         Eigen::Vector3d GetBodyPosition(const std::string &name);
         double GetMotionHalfCycleDuration();
+        bool IsValid(){return this->valid;}
 
 
         double info_start_time;
@@ -89,6 +92,7 @@ namespace MASS {
         WalkFSM walk_fsm;
 
         int push_step;
+        Eigen::Vector3d push_force_vec;
         double push_duration;
         double push_force;
         double push_start_timing;

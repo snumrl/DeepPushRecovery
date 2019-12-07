@@ -630,6 +630,17 @@ SetPushParams(int _push_step, double _push_duration, double _push_force, double 
 
 void
 Environment::
+PrintPushParamsSampled()
+{
+    std::cout << "push step: " << push_step << " steps" << std::endl;
+    std::cout << "push duration: " << push_duration << " s" << std::endl;
+    std::cout << "push force: " << push_force << " N" << std::endl;
+    std::cout << "push start timing: " << push_start_timing << " %" << std::endl;
+    std::cout << std::endl;
+}
+
+void
+Environment::
 PrintWalkingParamsSampled()
 {
     std::cout << "crouch angle: " << crouch_angle << " degree" << std::endl;
