@@ -88,6 +88,8 @@ namespace MASS {
 
         double max_detour_length;
         int max_detour_step_count;
+        Eigen::Vector3d max_detour_root_pos;
+        Eigen::Vector3d max_detour_on_line;
 
         WalkFSM walk_fsm;
 

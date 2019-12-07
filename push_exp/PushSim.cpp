@@ -337,6 +337,8 @@ PushStep()
         if (this->max_detour_length < detour_length) {
             this->max_detour_length = detour_length;
             this->max_detour_step_count = this->walk_fsm.step_count;
+            this->max_detour_root_pos = GetBodyPosition("Pelvis");
+            this->max_detour_root_pos[1] = this->info_root_pos[1][1];
         }
     }
 
@@ -371,6 +373,8 @@ simulatePrepare()
 
     this->max_detour_length = 0.;
     this->max_detour_step_count = 0;
+    this->max_detour_root_pos.setZero();
+    this->max_detour_on_line.setZero();
 
 }
 
