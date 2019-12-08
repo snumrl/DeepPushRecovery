@@ -65,6 +65,8 @@ public:
 	void PrintWalkingParams();
 	void PrintWalkingParamsSampled();
 
+	void SampleStrategy(int flag);
+
 private:
 	dart::simulation::WorldPtr mWorld;
 	int mControlHz,mSimulationHz;

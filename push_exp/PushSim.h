@@ -52,6 +52,8 @@ namespace MASS {
         double getPushedStep();
         double getStepLength();
         double getWalkingSpeed();
+        double getStartTimingTimeIC();
+        double getMidTimingTimeIC();
         double getStartTimingFootIC();
         double getMidTimingFootIC();
         double getStartTimingTimeFL();
@@ -59,8 +61,6 @@ namespace MASS {
         double getStartTimingFootFL();
         double getMidTimingFootFL();
 
-        void SetWalkingParams(int crouch_angle, double stride_length, double walk_speed);
-        void SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing);
         void PrintWalkingParams();
         void PrintWalkingParamsSampled();
         double GetSimulationTime();
@@ -70,15 +70,29 @@ namespace MASS {
         Eigen::Vector3d GetBodyPosition(const std::string &name);
         double GetMotionHalfCycleDuration();
         bool IsValid(){return this->valid;}
+        int StepCount(){return this->walk_fsm.step_count;}
 
 
+        // simulation results
         double info_start_time;
         double info_end_time;
         std::vector<Eigen::Vector3d> info_root_pos;
         std::vector<Eigen::Vector3d> info_left_foot_pos;
         std::vector<Eigen::Vector3d> info_right_foot_pos;
+        std::vector<Eigen::Vector3d> info_left_foot_pos_with_toe_off;
+        std::vector<Eigen::Vector3d> info_right_foot_pos_with_toe_off;
+
+        double info_start_time_backup;
+        Eigen::Vector3d info_root_pos_backup;
+
+        double pushed_step_time;
+        double pushed_next_step_time;
+
+        double pushed_step_time_toe_off;
+        double pushed_next_step_time_toe_off;
 
         double push_start_time;
+        double push_mid_time;
         double push_end_time;
         Eigen::Vector3d walking_dir;
 
@@ -86,13 +100,22 @@ namespace MASS {
         double pushed_length;
         bool valid;
 
-        double max_detour_length;
-        int max_detour_step_count;
         Eigen::Vector3d max_detour_root_pos;
         Eigen::Vector3d max_detour_on_line;
 
         WalkFSM walk_fsm;
 
+        bool pushed_start;
+        Eigen::Vector3d pushed_start_pos;
+        Eigen::Vector3d pushed_start_foot_pos;
+        Eigen::Vector3d pushed_start_toe_pos;
+
+        bool pushed_mid;
+        Eigen::Vector3d pushed_mid_pos;
+        Eigen::Vector3d pushed_mid_foot_pos;
+        Eigen::Vector3d pushed_mid_toe_pos;
+
+        // parameters
         int push_step;
         Eigen::Vector3d push_force_vec;
         double push_duration;

@@ -74,6 +74,7 @@ def worker_simulation(sim, param):
                        crouch_angle, step_length_ratio, walk_speed_ratio, push_force, push_start_timing, crouch_label,\
                        weight, height, ith, q = param
 
+    # print(int(crouch_angle), step_length_ratio, walk_speed_ratio, push_force, push_start_timing)
     sim.setParamedStepParams(int(crouch_angle), step_length_ratio, walk_speed_ratio)
     sim.setPushParams(push_step, push_duration, push_force, push_start_timing)
 
@@ -88,7 +89,7 @@ def worker_simulation(sim, param):
         walking_speed = sim.getWalkingSpeed()
         halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
 
-        print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
+        # print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
 
         distance = pushed_length * 1000.
         speed = walking_speed * 1000.
@@ -97,8 +98,8 @@ def worker_simulation(sim, param):
         duration = halfcycle_duration
         # start_timing_time_ic = sim.start_timing_time_ic
         # mid_timing_time_ic = sim.mid_timing_time_ic
-        start_timing_time_ic = 0.
-        mid_timing_time_ic = 0.
+        start_timing_time_ic = sim.getStartTimingTimeIC()
+        mid_timing_time_ic = sim.getMidTimingTimeIC()
         start_timing_foot_ic = sim.getStartTimingFootIC()
         mid_timing_foot_ic = sim.getMidTimingFootIC()
         start_timing_time_fl = sim.getStartTimingTimeFL()
@@ -186,7 +187,7 @@ def simulate(sim, launch_order):
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
 
-        num = 2
+        num = 300
     
 
     #=======================================================================
@@ -241,7 +242,7 @@ def simulate(sim, launch_order):
 
     # push strength
     mean_strength = .535
-    std_strength = .96
+    std_strength = .096
     mean_force = -(mean_strength*weight/push_duration)
     std_force = (std_strength*weight/push_duration)
     
@@ -256,10 +257,10 @@ def simulate(sim, launch_order):
     #     mean =          [mean_crouch[i], mean_length_ratio, mean_duration_ratio, mean_force, mean_timing,          mean_crouch[i]]
     #     cov = np.diag(  [std_crouch**2, std_length_ratio**2, std_duration_ratio**2, std_force**2, std_timing**2,   0])
     for i in range(len(mean_crouch)):
-        mean =        [mean_crouch[i], mean_length_ratio, mean_speed_ratio, mean_force,   mean_timing,   mean_crouch[i]]
-        cov = np.diag([0             , std_length_ratio**2,  std_speed_ratio**2,  std_force**2, std_timing**2, 0])
-        cov[1, 2] = stride_speed_covars[i]
-        cov[2, 1] = stride_speed_covars[i]
+        mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+        cov = np.diag([0             , std_length_ratio**2, std_speed_ratio**2, std_force**2, std_timing**2, 0])
+        cov[1, 2] = stride_speed_covars[i] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+        cov[2, 1] = stride_speed_covars[i] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
 
         if len(test_params) == 0:
             test_params = np.random.multivariate_normal(mean, cov, num)
@@ -270,9 +271,9 @@ def simulate(sim, launch_order):
     for i in range(len(test_params)):
         test_params[i][0] = abs(test_params[i][0])
         test_params[i][2] = abs(test_params[i][2])
-        test_params[i][3] = abs(test_params[i][3])
+        test_params[i][3] = -abs(test_params[i][3])
         
-    print(test_params)
+    # print(test_params)
 
     print()
     print('multivariate normal distribution')
@@ -333,6 +334,7 @@ def simulate(sim, launch_order):
     csvfile = write_start(csvfilepath)
     for i in range(len(paramgroups)):
         for j in range(len(paramgroups[i])):
+            # print("num", i, j)
             worker_simulation(sim, paramgroups[i][j])
         write_body(q, csvfile)
     write_end(csvfile)
@@ -381,16 +383,17 @@ if __name__ == '__main__':
         nn_dir = glob.glob(_nn_finding_dir + option)[0]
     meta_file = _metadata_dir + option + '.txt'
 
-    sim = None
-    if _is_muscle:
-        sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
-    else:
-        sim = PushSim(meta_file, nn_dir+'/max.pt')
+    for _ in range(12):
+        sim = None
+        if _is_muscle:
+            sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
+        else:
+            sim = PushSim(meta_file, nn_dir+'/max.pt')
 
-    if _crouch == "all":
-        simulate(sim, 0)
-        simulate(sim, 1)
-        simulate(sim, 2)
-        simulate(sim, 3)
-    else:
-        simulate(sim, [0, 20, 30, 60].index(int(_crouch)))
+        if _crouch == "all":
+            simulate(sim, 0)
+            simulate(sim, 1)
+            simulate(sim, 2)
+            simulate(sim, 3)
+        else:
+            simulate(sim, [0, 20, 30, 60].index(int(_crouch)))

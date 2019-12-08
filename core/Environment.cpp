@@ -541,7 +541,7 @@ SampleWalkingParams()
             do {
                 normalized_val *= normal(generator);
             }
-            while (normalized_val.norm() < 2.4477468307);
+            while (normalized_val.norm() > 2.4477468307);
             // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
 
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
@@ -557,14 +557,14 @@ SampleWalkingParams()
             std::normal_distribution<double> stride_length_distribution(stride_length_mean, sqrt(stride_length_var));
             do {
                 stride_length = stride_length_distribution(generator);
-            } while( abs(stride_length - stride_length_mean) < 2*sqrt(stride_length_var) );
+            } while( abs(stride_length - stride_length_mean) > 2*sqrt(stride_length_var) );
         }
 
         else if (walk_speed_var > DBL_EPSILON) {
             std::normal_distribution<double> walk_speed_distribution(walk_speed_mean, sqrt(walk_speed_var));
             do {
                 walk_speed = walk_speed_distribution(generator);
-            } while( abs(walk_speed - walk_speed_mean) < 2*sqrt(walk_speed_var) );
+            } while( abs(walk_speed - walk_speed_mean) > 2*sqrt(walk_speed_var) );
         }
     } else {
         // uniform sampling
@@ -604,6 +604,7 @@ SampleWalkingParams()
             walk_speed = walk_speed_distribution(generator);
         }
     }
+    // std::cout << "Environment::SampleWalkingParams: " << crouch_angle << " " << stride_length << " " << walk_speed << std::endl;
 }
 
 void
@@ -669,4 +670,21 @@ PrintWalkingParams() {
     else {
         std::cout << "uniform distribution" << std::endl;
     }
+}
+
+
+void
+Environment::
+SampleStrategy(int flag)
+{
+    if (flag == 0)
+        // uniform sampling
+        sample_param_as_normal = false;
+    if (flag == 1)
+        // normal sampling
+        sample_param_as_normal = true;
+
+    // TODO:
+    // adaptive sampling...to be implemented
+    if (flag == 2);
 }

@@ -33,6 +33,7 @@ private:
 	void DrawTrajectory();
     void DrawWalkingDir();
     void DrawDetourPerp();
+    void DrawPush();
 
 	void DrawMuscles(const std::vector<Muscle*>& muscles);
 	void DrawShadow(const Eigen::Vector3d& scale, const aiScene* mesh,double y);
@@ -41,7 +42,9 @@ private:
 
 	void StepMotion();
 
-	bool mFocus;
+    void SamplePushForce();
+
+    bool mFocus;
 	bool mSimulating;
 	bool mDrawOBJ;
 	bool mDrawShadow;
