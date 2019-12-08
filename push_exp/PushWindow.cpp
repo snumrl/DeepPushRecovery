@@ -80,21 +80,28 @@ keyboard(unsigned char _key, int _x, int _y)
 	    this->Step();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
 	    break;
-	case 'f': mFocus = !mFocus;break;
-	case 'r':
-	    this->Reset(false);
-        mRootTrajectory.clear();
-	    simulatePrepare();
+
+	case 'f':
+	    mFocus = !mFocus;
 	    break;
+
 	case ' ':
 	    mSimulating = !mSimulating;
 	    break;
-	case 'o': mDrawOBJ = !mDrawOBJ;break;
+
+	case 'o':
+	    mDrawOBJ = !mDrawOBJ;
+	    break;
+
     case 'S':
         this->StepMotion();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
         break;
-	case 'p': mBVHPlaying = !mBVHPlaying;break;
+
+	case 'p':
+	    mBVHPlaying = !mBVHPlaying;
+	    break;
+
 	case 'm':
 	    int a;
 	    double b, c, d, e;
@@ -103,7 +110,12 @@ keyboard(unsigned char _key, int _x, int _y)
         this->mEnv->PrintWalkingParamsSampled();
 //	    this->setParamedStepParams(a, b, c);
         this->setPushParams(8, 0.2, d, e);
-	    break;
+    case 'r':
+        this->Reset(false);
+        mRootTrajectory.clear();
+        simulatePrepare();
+        std::cout << "Reset!" << std::endl;
+        break;
 
 	case 27 : exit(0);break;
 	default:

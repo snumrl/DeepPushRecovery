@@ -339,6 +339,8 @@ PushStep()
             this->max_detour_step_count = this->walk_fsm.step_count;
             this->max_detour_root_pos = GetBodyPosition("Pelvis");
             this->max_detour_root_pos[1] = this->info_root_pos[1][1];
+            this->max_detour_on_line = this->info_root_pos[0] + this->walking_dir.dot(root_pos_plane - point_on_line) * this->walking_dir;
+            this->max_detour_on_line[1] = this->info_root_pos[1][1];
         }
     }
 
