@@ -147,7 +147,7 @@ void PushWindow::displayTimer(int _val) {
 
 void PushWindow::SamplePushForce() {
     std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
-    std::normal_distribution<double> push_force_dist(.535 / 3., .096);
+    std::normal_distribution<double> push_force_dist(.535, .096);
     std::normal_distribution<double> push_timing_dist(34, 21);
     this->setPushParams(8, .2, -abs(push_force_dist(generator) * 72.*5.), abs(push_timing_dist(generator)));
 }

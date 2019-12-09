@@ -490,27 +490,27 @@ double
 PushSim::
 getStartTimingTimeIC(){
 //    (push_start_time - prev_foot_ic_time) / (swing_foot_ic_time - prev_foot_ic_time);
-    return (push_start_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    return 100.*(push_start_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
 }
 
 double
 PushSim::
 getMidTimingTimeIC(){
-    return (push_mid_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    return 100.*(push_mid_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
 }
 
 double
 PushSim::
 getStartTimingFootIC(){
     // (push_start_pos - prev_foot_ic_pos) / (swing_foot_ic_pos - prev_foot_ic_pos)
-    return walking_dir.dot(this->pushed_start_foot_pos - this->info_right_foot_pos[2])
+    return 100.*walking_dir.dot(this->pushed_start_foot_pos - this->info_right_foot_pos[2])
          / walking_dir.dot(this->info_right_foot_pos[3] - this->info_right_foot_pos[2]);
 }
 
 double
 PushSim::
 getMidTimingFootIC(){
-    return walking_dir.dot(this->pushed_mid_foot_pos - this->info_right_foot_pos[2])
+    return 100.*walking_dir.dot(this->pushed_mid_foot_pos - this->info_right_foot_pos[2])
         / walking_dir.dot(this->info_right_foot_pos[3] - this->info_right_foot_pos[2]);
 }
 
@@ -518,19 +518,19 @@ double
 PushSim::
 getStartTimingTimeFL(){
     // (push_start_time - prev_foot_fl_time) / (swing_foot_fl_time - prev_foot_fl_time)
-    return (push_start_time - pushed_step_time_toe_off) / (pushed_next_step_time_toe_off - pushed_step_time_toe_off);
+    return 100.*(push_start_time - pushed_step_time_toe_off) / (pushed_next_step_time_toe_off - pushed_step_time_toe_off);
 }
 
 double
 PushSim::
 getMidTimingTimeFL(){
-    return (push_mid_time - pushed_step_time_toe_off) / (pushed_next_step_time_toe_off - pushed_step_time_toe_off);
+    return 100.*(push_mid_time - pushed_step_time_toe_off) / (pushed_next_step_time_toe_off - pushed_step_time_toe_off);
 }
 
 double
 PushSim::
 getStartTimingFootFL(){
-    return walking_dir.dot(this->pushed_start_toe_pos - this->info_right_foot_pos_with_toe_off[0])
+    return 100.*walking_dir.dot(this->pushed_start_toe_pos - this->info_right_foot_pos_with_toe_off[0])
            / walking_dir.dot(this->info_right_foot_pos_with_toe_off[1] - this->info_right_foot_pos_with_toe_off[0]);
 }
 
@@ -538,7 +538,7 @@ double
 PushSim::
 getMidTimingFootFL() {
     // (push_start_pos - prev_foot_fl_pos) / (swing_foot_fl_pos - prev_foot_fl_pos)
-    return walking_dir.dot(this->pushed_mid_toe_pos - this->info_right_foot_pos_with_toe_off[0])
+    return 100.*walking_dir.dot(this->pushed_mid_toe_pos - this->info_right_foot_pos_with_toe_off[0])
            / walking_dir.dot(this->info_right_foot_pos_with_toe_off[1] - this->info_right_foot_pos_with_toe_off[0]);
 }
 

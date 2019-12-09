@@ -231,7 +231,7 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->clearInternalForces();
 	mCharacter->GetSkeleton()->clearExternalForces();
 	
-	double t = 0.0;
+	double t = 0.2;
 
     if(walking_param_change) {
         SampleWalkingParams();
@@ -502,7 +502,10 @@ GetReward()
 	double r_ee = exp_of_squared(ee_diff,40.0);
 	double r_com = exp_of_squared(com_diff,10.0);
 
-	double r = r_ee*(w_q*r_q + w_v*r_v);
+	Eigen::Vector3d com_vel = skel->getCOMLinearVelocity().normalized();
+	double r_g = exp_of_squared(com_vel[2]-1., 40.0);
+
+	double r = 0.9 * r_ee*(w_q*r_q + w_v*r_v) + 0.1 * r_g;
 
 	return r;
 }

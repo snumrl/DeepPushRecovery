@@ -146,7 +146,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order):
+def simulate(sim, launch_order, num, option_str=''):
     #=======================================================================
     # settings
     #=======================================================================
@@ -187,9 +187,6 @@ def simulate(sim, launch_order):
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
 
-        num = 300
-    
-
     #=======================================================================
     # set logger
     #=======================================================================
@@ -197,12 +194,13 @@ def simulate(sim, launch_order):
         resultName = 'test'
     else:
         resultName = '%s%s' % (gettimestringisoformat(), additional_str)
-    outDir = './results/main_CrouchSimulation/%s/' % resultName
+    # outDir = './results/main_CrouchSimulation/%s/' % resultName
+    outDir = os.path.dirname(os.path.abspath(__file__)) + '/results/'
 
     if not os.path.exists(outDir):
         os.makedirs(outDir)
 
-    csvfilepath = outDir+'_result.csv'
+    csvfilepath = outDir + option_str + '_' + str(num) + 'trials_' + gettimestringisoformat() + '.csv'
     print('start logging at', gettimestringisoformat())
     print()
 
@@ -334,66 +332,72 @@ def simulate(sim, launch_order):
     csvfile = write_start(csvfilepath)
     for i in range(len(paramgroups)):
         for j in range(len(paramgroups[i])):
-            # print("num", i, j)
             worker_simulation(sim, paramgroups[i][j])
         write_body(q, csvfile)
     write_end(csvfile)
 
     print()
-    print('elapsed time = %f' % (time.time()-pt))
+    _s = time.time() - pt
+    _h = _s // 3600
+    _m = _s // 60
+    _s -= 60 * _m
+    _m -= 60 * _h
+    print('elapsed time = %d h:%d m:%d s' % (int(_h), int(_m), int(_s)))
     print()
     print('end logging at', gettimestringisoformat())
 
 
 if __name__ == '__main__':
+    # import argparse
+    #
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('-p', '--pushed', help='using trained with push', action='store_true')
+    # parser.add_argument('-f', '--segfoot', help='using multi-segment foot', action='store_true')
+    # parser.add_argument('type', help='actuation type', choices=['torque', 'muscle'])
+    # parser.add_argument('crouch', help='crouch angle', choices=['0', '20', '30', '60', 'all'])
+    # parser.add_argument('dist', help='distribution method', choices=['normal', 'uniform', 'adaptive'])
+    # parser.add_argument('trial_num', help='actuation type', type=int)
+    #
+    # args = parser.parse_args()
+    # trial_num = args.trial_num
+    # crouch = args.crouch
+    #
+    # option = ''
+    # option += args.type + '_'
+    # option += 'push_' if args.pushed else 'nopush_'
+    # option += 'msf_' if args.segfoot else 'sf_'
+    #
+    # if args.crouch != 'all':
+    #     option += 'crouch'
+    # option += args.crouch
+    # option += '_mean_var_'
+    # option += args.dist
+
     import sys
-    if len(sys.argv) > 1:
-        launch_order = int(sys.argv[1])
-    else:
-        launch_order = None
+    import re
+
+    option = sys.argv[1]
+    trial_num = int(sys.argv[2])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
-    _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../../*/nn/*/'
-
-    _is_muscle = False
-    _is_pushed_during_training = False
-    _is_multi_seg_foot = False
-    _is_walking_variance = True
-    _is_walking_param_normal_trained = False
-    # _crouch = input('crouch angle(0, 20, 30, 60, all)? ')
-    _crouch = 'all'
-    _params = (_is_muscle, _is_pushed_during_training, _is_multi_seg_foot, _is_walking_variance, _is_walking_param_normal_trained, _crouch)
-
-    option = ''
-    option += 'muscle_' if _is_muscle else 'torque_'
-    option += 'push_' if _is_pushed_during_training else 'nopush_'
-    option += 'msf_' if _is_multi_seg_foot else 'sf_'
-
-    assert _crouch in ['0', '20', '30', '60', 'all']
-    if _crouch != 'all':
-        option += 'crouch'
-    option += _crouch
-    option += '_mean'
-    if _is_walking_variance:
-        option += '_var_'
-        option += 'normal' if _is_walking_param_normal_trained else 'uniform'
+    _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/*/'
 
     nn_dir = None
     if _nn_finding_dir is not None:
         nn_dir = glob.glob(_nn_finding_dir + option)[0]
     meta_file = _metadata_dir + option + '.txt'
 
-    for _ in range(12):
-        sim = None
-        if _is_muscle:
-            sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
-        else:
-            sim = PushSim(meta_file, nn_dir+'/max.pt')
+    sim = None
+    if 'muscle' in option:
+        sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
+    else:
+        sim = PushSim(meta_file, nn_dir+'/max.pt')
 
-        if _crouch == "all":
-            simulate(sim, 0)
-            simulate(sim, 1)
-            simulate(sim, 2)
-            simulate(sim, 3)
-        else:
-            simulate(sim, [0, 20, 30, 60].index(int(_crouch)))
+    if "all" in option:
+        simulate(sim, 0, trial_num, option)
+        simulate(sim, 1, trial_num, option)
+        simulate(sim, 2, trial_num, option)
+        simulate(sim, 3, trial_num, option)
+    else:
+        crouch = re.findall(r'crouch\d+', option)[0][6:]
+        simulate(sim, ['0', '20', '30', '60'].index(crouch), trial_num, option)
