@@ -95,6 +95,7 @@ namespace MASS {
         double push_mid_time;
         double push_end_time;
         Eigen::Vector3d walking_dir;
+        Eigen::Vector3d push_force_vec;
 
         int pushed_step;
         double pushed_length;
@@ -118,7 +119,6 @@ namespace MASS {
 
         // parameters
         int push_step;
-        Eigen::Vector3d push_force_vec;
         double push_duration;
         double push_force;
         double push_start_timing;

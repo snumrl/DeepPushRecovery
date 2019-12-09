@@ -262,6 +262,7 @@ simulatePrepare()
     this->push_mid_time = 30.;
     this->push_end_time = 30.;
     this->walking_dir = Eigen::Vector3d::Zero();
+    this->push_force_vec = Eigen::Vector3d::Zero();
 
     this->pushed_step = 0;
     this->pushed_length = 0;
@@ -315,10 +316,6 @@ PushStep()
     }
 
     if(last_step_count == 7 && this->walk_fsm.step_count == 8) {
-        this->walking_dir = this->info_root_pos[1] - this->info_root_pos[0];
-        this->walking_dir[1] = 0.;
-        this->walking_dir.normalize();
-
         this->info_end_time = this->GetSimulationTime();
         this->pushed_step_time = this->GetSimulationTime();
         this->info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
@@ -332,6 +329,8 @@ PushStep()
                                 (this->push_start_timing / 100.) * this->GetMotionHalfCycleDuration();
         this->push_mid_time = this->push_start_time + .5 * this->push_duration;
         this->push_end_time = this->push_start_time + this->push_duration;
+
+        this->push_force_vec = this->push_force * Eigen::Vector3d::UnitY().cross(this->walking_dir);
         // std::cout << "push at " << this->push_start_time << std::endl;
     }
 
@@ -381,7 +380,7 @@ PushStep()
 
         if(this->pushed_step > 5)
         {
-            this->stopcode = 2;
+            this->stopcode = 3;  // pushed, didn't falling down but distance is so far
             this->valid = false;
         }
     }
@@ -408,14 +407,17 @@ simulate(){
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
             // std::cout << "fallen at " << this->walk_fsm.step_count << " "<< this->GetSimulationTime() << "s" << std::endl;
             this->valid = false;
-            this->stopcode = 1;
+            if (this->pushed_start)
+                this->stopcode = 2; // falling down after push
+            else
+                this->stopcode = 1; // falling down before push
             break;
         }
 
         PushStep();
     }
-    if (pushed_step == 0) {
-        this->stopcode = 3;
+    if (pushed_step == 0 && this->valid) {
+        this->stopcode = 4;  // pushed but pushed distance is minus
         this->valid = false;
     }
 
@@ -446,7 +448,8 @@ setPushParams(int _push_step, double _push_duration, double _push_force, double 
     this->push_force = _push_force;
     this->push_start_timing = _push_start_timing;
     this->mEnv->SetPushParams(_push_step, _push_duration, _push_force, _push_start_timing);
-    this->push_force_vec = Eigen::Vector3d(this->push_force, 0., 0.);
+    // push_force_vec should be set in PushStep
+    // this->push_force_vec = Eigen::Vector3d(this->push_force, 0., 0.);
     // this->mEnv->PrintPushParamsSampled();
 }
 

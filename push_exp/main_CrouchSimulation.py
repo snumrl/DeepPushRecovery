@@ -81,12 +81,20 @@ def worker_simulation(sim, param):
     stopcode = sim.simulate()
     # stopcode = 0
 
-    pushed_length = sim.getPushedLength()
-    pushed_steps = sim.getPushedStep()
-    push_strength = abs(push_force * push_duration / weight)
-    step_length = sim.getStepLength()
-    walking_speed = sim.getWalkingSpeed()
-    halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
+    if stopcode == 1:
+        pushed_length = 0.
+        pushed_steps = 0
+        push_strength = 0.
+        step_length = 0.
+        walking_speed = 0.
+        halfcycle_duration = 0.
+    else:
+        pushed_length = sim.getPushedLength()
+        pushed_steps = sim.getPushedStep()
+        push_strength = abs(push_force * push_duration / weight)
+        step_length = sim.getStepLength()
+        walking_speed = sim.getWalkingSpeed()
+        halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
 
     # print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
 
@@ -95,16 +103,27 @@ def worker_simulation(sim, param):
     force = push_strength * 1000.
     stride = step_length * 1000.
     duration = halfcycle_duration
-    # start_timing_time_ic = sim.start_timing_time_ic
-    # mid_timing_time_ic = sim.mid_timing_time_ic
-    start_timing_time_ic = sim.getStartTimingTimeIC()
-    mid_timing_time_ic = sim.getMidTimingTimeIC()
-    start_timing_foot_ic = sim.getStartTimingFootIC()
-    mid_timing_foot_ic = sim.getMidTimingFootIC()
-    start_timing_time_fl = sim.getStartTimingTimeFL()
-    mid_timing_time_fl = sim.getMidTimingTimeFL()
-    start_timing_foot_fl = sim.getStartTimingFootFL()
-    mid_timing_foot_fl = sim.getMidTimingFootFL()
+
+    if stopcode == 0:
+        # start_timing_time_ic = sim.start_timing_time_ic
+        # mid_timing_time_ic = sim.mid_timing_time_ic
+        start_timing_time_ic = sim.getStartTimingTimeIC()
+        mid_timing_time_ic = sim.getMidTimingTimeIC()
+        start_timing_foot_ic = sim.getStartTimingFootIC()
+        mid_timing_foot_ic = sim.getMidTimingFootIC()
+        start_timing_time_fl = sim.getStartTimingTimeFL()
+        mid_timing_time_fl = sim.getMidTimingTimeFL()
+        start_timing_foot_fl = sim.getStartTimingFootFL()
+        mid_timing_foot_fl = sim.getMidTimingFootFL()
+    else:
+        start_timing_time_ic = 0.
+        mid_timing_time_ic = 0.
+        start_timing_foot_ic = 0.
+        mid_timing_foot_ic = 0.
+        start_timing_time_fl = 0.
+        mid_timing_time_fl = 0.
+        start_timing_foot_fl = 0.
+        mid_timing_foot_fl = 0.
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
 
