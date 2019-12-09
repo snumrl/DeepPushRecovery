@@ -44,7 +44,7 @@ namespace MASS {
         bool mNNLoaded;
         bool mMuscleNNLoaded;
 
-        void simulate();
+        int simulate();
         void simulatePrepare();
         void setParamedStepParams(int crouch_angle, double step_length_ratio, double walk_speed_ratio);
         void setPushParams(int push_step, double push_duration, double push_force, double push_start_timing);
@@ -99,6 +99,7 @@ namespace MASS {
         int pushed_step;
         double pushed_length;
         bool valid;
+        int stopcode;
 
         Eigen::Vector3d max_detour_root_pos;
         Eigen::Vector3d max_detour_on_line;

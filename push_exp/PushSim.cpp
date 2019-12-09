@@ -266,6 +266,7 @@ simulatePrepare()
     this->pushed_step = 0;
     this->pushed_length = 0;
     this->valid = true;
+    this->stopcode = 0;
 
     this->max_detour_root_pos.setZero();
     this->max_detour_on_line.setZero();
@@ -380,6 +381,7 @@ PushStep()
 
         if(this->pushed_step > 5)
         {
+            this->stopcode = 2;
             this->valid = false;
         }
     }
@@ -394,7 +396,7 @@ PushStep()
     this->Step();
 }
 
-void
+int
 PushSim::
 simulate(){
     simulatePrepare();
@@ -406,13 +408,18 @@ simulate(){
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
             // std::cout << "fallen at " << this->walk_fsm.step_count << " "<< this->GetSimulationTime() << "s" << std::endl;
             this->valid = false;
+            this->stopcode = 1;
             break;
         }
 
         PushStep();
     }
-    if (pushed_step == 0)
+    if (pushed_step == 0) {
+        this->stopcode = 3;
         this->valid = false;
+    }
+
+    return this->stopcode;
 
     // std::cout << "end!" << " " << (this->valid ? "True":"False") << " " << this->walk_fsm.step_count << " steps"<< std::endl;
 }

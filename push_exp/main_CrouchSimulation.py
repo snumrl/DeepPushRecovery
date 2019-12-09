@@ -81,39 +81,38 @@ def worker_simulation(sim, param):
     stopcode = sim.simulate()
     # stopcode = 0
 
-    if sim.IsValid():
-        pushed_length = sim.getPushedLength()
-        pushed_steps = sim.getPushedStep()
-        push_strength = abs(push_force * push_duration / weight)
-        step_length = sim.getStepLength()
-        walking_speed = sim.getWalkingSpeed()
-        halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
+    pushed_length = sim.getPushedLength()
+    pushed_steps = sim.getPushedStep()
+    push_strength = abs(push_force * push_duration / weight)
+    step_length = sim.getStepLength()
+    walking_speed = sim.getWalkingSpeed()
+    halfcycle_duration = sim.getStepLength() / sim.getWalkingSpeed()
 
-        # print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
+    # print(pushed_length, pushed_steps, push_strength, step_length, walking_speed)
 
-        distance = pushed_length * 1000.
-        speed = walking_speed * 1000.
-        force = push_strength * 1000.
-        stride = step_length * 1000.
-        duration = halfcycle_duration
-        # start_timing_time_ic = sim.start_timing_time_ic
-        # mid_timing_time_ic = sim.mid_timing_time_ic
-        start_timing_time_ic = sim.getStartTimingTimeIC()
-        mid_timing_time_ic = sim.getMidTimingTimeIC()
-        start_timing_foot_ic = sim.getStartTimingFootIC()
-        mid_timing_foot_ic = sim.getMidTimingFootIC()
-        start_timing_time_fl = sim.getStartTimingTimeFL()
-        mid_timing_time_fl = sim.getMidTimingTimeFL()
-        start_timing_foot_fl = sim.getStartTimingFootFL()
-        mid_timing_foot_fl = sim.getMidTimingFootFL()
+    distance = pushed_length * 1000.
+    speed = walking_speed * 1000.
+    force = push_strength * 1000.
+    stride = step_length * 1000.
+    duration = halfcycle_duration
+    # start_timing_time_ic = sim.start_timing_time_ic
+    # mid_timing_time_ic = sim.mid_timing_time_ic
+    start_timing_time_ic = sim.getStartTimingTimeIC()
+    mid_timing_time_ic = sim.getMidTimingTimeIC()
+    start_timing_foot_ic = sim.getStartTimingFootIC()
+    mid_timing_foot_ic = sim.getMidTimingFootIC()
+    start_timing_time_fl = sim.getStartTimingTimeFL()
+    mid_timing_time_fl = sim.getMidTimingTimeFL()
+    start_timing_foot_fl = sim.getStartTimingFootFL()
+    mid_timing_foot_fl = sim.getMidTimingFootFL()
 
-        halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
+    halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
 
-        q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
-               start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
-               start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
-               step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
-               stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
+    q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
+           start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
+           start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
+           step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
+           stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
 
 
 def write_start(csvfilepath):
