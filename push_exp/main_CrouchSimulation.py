@@ -200,7 +200,7 @@ def simulate(sim, launch_order, num, option_str=''):
     if not os.path.exists(outDir):
         os.makedirs(outDir)
 
-    csvfilepath = outDir + option_str + '_' + str(num) + 'trials_' + gettimestringisoformat() + '_' + socket.gethostname() + '.csv'
+    csvfilepath = outDir + option_str + '_' + gettimestringisoformat() + '_' + str(num) + 'trials_' + socket.gethostname() + '.csv'
     print('start logging at', gettimestringisoformat())
     print()
 
