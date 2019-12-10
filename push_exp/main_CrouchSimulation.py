@@ -205,14 +205,10 @@ def simulate(sim, launch_order, num, option_str=''):
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
 
-    #=======================================================================
+    # =======================================================================
     # set logger
-    #=======================================================================
-    if TEST:
-        resultName = 'test'
-    else:
-        resultName = '%s%s' % (gettimestringisoformat(), additional_str)
-    # outDir = './results/main_CrouchSimulation/%s/' % resultName
+    # =======================================================================
+
     outDir = os.path.dirname(os.path.abspath(__file__)) + '/results/'
 
     if not os.path.exists(outDir):

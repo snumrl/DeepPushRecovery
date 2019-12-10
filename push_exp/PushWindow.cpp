@@ -107,11 +107,11 @@ void PushWindow::displayTimer(int _val) {
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
         if(this->GetSimulationTime() >= push_start_time + 10.)
         {
-            if(pushed_step == 0)
+            if(pushed_step == 0) {
                 this->valid = false;
+                this->stopcode = 4;
+            }
             mSimulating = !mSimulating;
-            std::cout << this->info_right_foot_pos.size() << std::endl;
-            std::cout << "end1!" << " " << (this->valid ? "True":"False") << " " << this->walk_fsm.step_count << " steps"<< std::endl;
             if(this->valid){
                 std::cout << "PushedLength: " << getPushedLength() << std::endl;
                 std::cout << "PushedStep: " << getPushedStep() << std::endl;
@@ -130,18 +130,21 @@ void PushWindow::displayTimer(int _val) {
         }
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
             this->valid = false;
+            if (this->pushed_start)
+                this->stopcode = 2; // falling down after push
+            else
+                this->stopcode = 1; // falling down before push
             mSimulating = !mSimulating;
-            std::cout << "end2!" << " " << (this->valid ? "True":"False") << " " << this->walk_fsm.step_count << " steps"<< std::endl;
         }
 
     }
 	else if(!this->valid && mSimulating){
 	    mSimulating = !mSimulating;
-        std::cout << "end3!" << " " << (this->valid ? "True":"False") << " " << this->walk_fsm.step_count << " steps"<< std::endl;
 	}
+    std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
 
 
-	glutPostRedisplay();
+    glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
