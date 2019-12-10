@@ -21,7 +21,8 @@ find_package(GLUT REQUIRED)
 link_directories(../core/)
 include_directories(../core/)
 
-file(GLOB srcs "*.h" "*.cpp")
+file(GLOB pypushexp_srcs "PushSim.h" "PushSim.cpp" "pypushexp.cpp")
+file(GLOB pushrender_srcs "main.cpp" "PushSim.h" "PushSim.cpp" "PushWindow.h" "PushWindow.cpp" "PushWindowDraw.cpp")
 
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
@@ -35,10 +36,10 @@ if(APPLE)
     set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 endif(APPLE)
 
-add_library(pypushexp SHARED ${srcs})
+add_library(pypushexp SHARED ${pypushexp_srcs})
 
 target_link_libraries(pypushexp ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} mss)
 set_target_properties(pypushexp PROPERTIES PREFIX "" )
 
-add_executable(push_render ${srcs})
+add_executable(push_render ${pushrender_srcs})
 target_link_libraries(push_render ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenGL_gl_LIBRARY} ${OpenGL_glu_LIBRARY} ${GLUT_LIBRARIES} mss)

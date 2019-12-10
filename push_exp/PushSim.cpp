@@ -30,40 +30,6 @@ static double calculate_distance_to_line(const Eigen::Vector3d &point, const Eig
     return copysign(point_vec_perp.norm(), point_vec_perp.dot(force_vec));
 }
 
-WalkFSM::
-WalkFSM()
-{
-    reset();
-}
-
-void
-WalkFSM::
-reset()
-{
-    this->is_last_sw_r = false;
-    this->step_count = 0;
-    this->is_double_st = false;
-}
-
-void
-WalkFSM::
-check(bool bool_l, bool bool_r)
-{
-    if (!this->is_double_st && bool_l && bool_r)
-    {
-        this->is_double_st = true;
-        this->step_count += 1;
-        this->is_last_sw_r = !(this->is_last_sw_r);
-    }
-    else if ( this->is_double_st && !bool_l && this->is_last_sw_r)
-    {
-        this->is_double_st = false;
-    }
-    else if ( this->is_double_st && !bool_r && !(this->is_last_sw_r))
-    {
-        this->is_double_st = false;
-    }
-}
 
 PushSim::
 PushSim(const std::string &meta_file, const std::string& nn_path)
@@ -283,6 +249,9 @@ simulatePrepare()
     this->pushed_mid_pos.setZero();
     this->pushed_mid_foot_pos.setZero();
     this->pushed_mid_toe_pos.setZero();
+
+    this->travelDistance = 0.;
+    this->last_root_pos.setZero();
 }
 
 
@@ -297,6 +266,8 @@ PushStep()
     int last_step_count = this->walk_fsm.step_count;
     bool last_step_double_st = this->walk_fsm.is_double_st;
     this->walk_fsm.check(bool_l, bool_r);
+    this->last_root_pos = this->GetBodyPosition("Pelvis");
+    this->last_root_pos[1] = 0.;
 
     if(last_step_count + 1 == this->walk_fsm.step_count) {
         // std::cout << last_step_count << "->" << this->walk_fsm.step_count << " "<< this->GetSimulationTime() << std::endl;
@@ -393,6 +364,10 @@ PushStep()
     }
 
     this->Step();
+    Eigen::Vector3d root_pos = this->GetBodyPosition("Pelvis");
+    root_pos[1] = 0.;
+    this->travelDistance += (root_pos - last_root_pos).norm();
+
 }
 
 int
@@ -401,7 +376,7 @@ simulate(){
     simulatePrepare();
 
     while (this->valid) {
-        if (this->GetSimulationTime() >= this->push_start_time + 10.)
+        if (this->GetSimulationTime() >= this->push_start_time + 2.)
             break;
 
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
@@ -447,7 +422,8 @@ setPushParams(int _push_step, double _push_duration, double _push_force, double 
     this->push_duration = _push_duration;
     this->push_force = _push_force;
     this->push_start_timing = _push_start_timing;
-    this->mEnv->SetPushParams(_push_step, _push_duration, _push_force, _push_start_timing);
+    // this->mEnv->SetPushParams(_push_step, _push_duration, _push_force, _push_start_timing);
+
     // push_force_vec should be set in PushStep
     // this->push_force_vec = Eigen::Vector3d(this->push_force, 0., 0.);
     // this->mEnv->PrintPushParamsSampled();
@@ -550,6 +526,19 @@ getMidTimingFootFL() {
     // (push_start_pos - prev_foot_fl_pos) / (swing_foot_fl_pos - prev_foot_fl_pos)
     return 100.*walking_dir.dot(this->pushed_mid_toe_pos - this->info_right_foot_pos_with_toe_off[0])
            / walking_dir.dot(this->info_right_foot_pos_with_toe_off[1] - this->info_right_foot_pos_with_toe_off[0]);
+}
+
+
+double PushSim::getMechanicalWork() {
+    return this->mEnv->GetMechanicalWork();
+}
+
+double PushSim::getTravelDistance() {
+    return this->travelDistance;
+}
+
+double PushSim::getCostOfTransport() {
+    return this->getMechanicalWork() / (72. * 9.8 * this->getTravelDistance());
 }
 
 

@@ -59,13 +59,16 @@ public:
     // push experiments
     bool HasCrouchVariation(){return crouch_angle_set.size() > 1;}
 	void SampleWalkingParams();
+    void SamplePushParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
-    void SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing);
+	void SetPushParams(int _push_step, double _push_duration, double _push_force_mean, double _push_force_std, double _push_start_timing_mean, double _push_start_timing_std);
     void PrintPushParamsSampled();
 	void PrintWalkingParams();
 	void PrintWalkingParamsSampled();
 
-	void SampleStrategy(int flag);
+	void SetSampleStrategy(int flag);
+
+	double GetMechanicalWork(){return this->mechanicalWork;}
 
 private:
 	dart::simulation::WorldPtr mWorld;
@@ -75,6 +78,8 @@ private:
 	dart::dynamics::SkeletonPtr mGround;
 	Eigen::VectorXd mAction;
 	Eigen::VectorXd mTargetPositions,mTargetVelocities;
+
+	double world_start_time;
 
 	int mNumState;
 	int mNumActiveDof;
@@ -89,6 +94,9 @@ private:
 	int mRandomSampleIndex;
 
 	double w_q,w_v,w_ee,w_com;
+
+
+	std::default_random_engine generator;
 
     int index;
 
@@ -107,11 +115,22 @@ private:
 
     bool walking_param_change;
 
+    WalkFSM walk_fsm;
+
     bool push_enable;
     int push_step;
     double push_duration;
     double push_force;
+    double push_force_mean;
+    double push_force_std;
     double push_start_timing;
+    double push_start_timing_mean;
+    double push_start_timing_std;
+
+    double push_start_time;
+    bool push_set;
+
+    double mechanicalWork;
 };
 };
 

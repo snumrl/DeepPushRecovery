@@ -170,7 +170,7 @@ void
 EnvWrapper::
 SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing)
 {
-    mEnv->SetPushParams(_push_step, _push_duration, _push_force, _push_start_timing);
+    mEnv->SetPushParams(_push_step, _push_duration, _push_force, 0., _push_start_timing, 0.);
 }
 
 double

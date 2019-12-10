@@ -14,16 +14,6 @@ namespace p = boost::python;
 namespace np = boost::python::numpy;
 
 namespace MASS {
-    class WalkFSM {
-    public:
-        WalkFSM();
-        void reset();
-        void check(bool bool_l, bool bool_r);
-
-        bool is_last_sw_r;
-        int step_count;
-        bool is_double_st;
-    };
 
 
     class PushSim {
@@ -60,6 +50,10 @@ namespace MASS {
         double getMidTimingTimeFL();
         double getStartTimingFootFL();
         double getMidTimingFootFL();
+
+        double getMechanicalWork();
+        double getTravelDistance();
+        double getCostOfTransport();
 
         void PrintWalkingParams();
         void PrintWalkingParamsSampled();
@@ -116,6 +110,10 @@ namespace MASS {
         Eigen::Vector3d pushed_mid_pos;
         Eigen::Vector3d pushed_mid_foot_pos;
         Eigen::Vector3d pushed_mid_toe_pos;
+
+        double travelDistance;
+
+        Eigen::Vector3d last_root_pos;
 
         // parameters
         int push_step;

@@ -12,7 +12,7 @@ PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path)
 {
 	mEnv->PrintWalkingParams();
 	// normally sample
-    this->mEnv->SampleStrategy(1);
+    this->mEnv->SetSampleStrategy(1);
 
 	mBackground[0] = 1.0;
 	mBackground[1] = 1.0;
@@ -125,7 +125,11 @@ void PushWindow::displayTimer(int _val) {
                 std::cout << "MidTimingTimeFL: " << getMidTimingTimeFL() << std::endl;
                 std::cout << "StartTimingFootFL: " << getStartTimingFootFL() << std::endl;
                 std::cout << "MidTimingFootFL: " << getMidTimingFootFL() << std::endl;
+                std::cout << "MechanicalWork: " << getMechanicalWork() << std::endl;
+                std::cout << "TravelDistance: " << getTravelDistance() << std::endl;
+                std::cout << "CostOfTransport: " << getCostOfTransport() << std::endl;
             }
+            std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
 
         }
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
@@ -135,13 +139,13 @@ void PushWindow::displayTimer(int _val) {
             else
                 this->stopcode = 1; // falling down before push
             mSimulating = !mSimulating;
+            std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
         }
-
     }
 	else if(!this->valid && mSimulating){
 	    mSimulating = !mSimulating;
-	}
-    std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
+        std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
+    }
 
 
     glutPostRedisplay();

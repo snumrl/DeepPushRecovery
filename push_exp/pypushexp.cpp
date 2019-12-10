@@ -33,5 +33,8 @@ BOOST_PYTHON_MODULE(pypushexp)
         .def("getMidTimingTimeFL", &PushSim::getMidTimingTimeFL)
         .def("getStartTimingFootFL", &PushSim::getStartTimingFootFL)
         .def("getMidTimingFootFL", &PushSim::getMidTimingFootFL)
+        .def("getMechanicalWork", &PushSim::getMechanicalWork)
+        .def("getTravelDistance", &PushSim::getTravelDistance)
+        .def("getCostOfTransport", &PushSim::getCostOfTransport)
     ;
 }

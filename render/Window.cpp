@@ -183,8 +183,6 @@ Step()
 		action = Eigen::VectorXd::Zero(mEnv->GetNumAction());
 	mEnv->SetAction(action);
 
-//	std::cout << mEnv->GetCharacter()->GetSkeleton()->getBodyNode(0)->getTransform().translation() << std::endl;
-
 	if(mEnv->GetUseMuscle())
 	{
 		int inference_per_sim = 2;
@@ -199,8 +197,6 @@ Step()
 	else
 	{
 		for(int i=0;i<num;i++) {
-		    if (mEnv->GetCharacter()->GetSkeleton()->getBodyNode("Pelvis")->getTransform().translation()[1] < 0.3)
-                std::cout << mEnv->GetWorld()->getTime() << std::endl;
             mEnv->Step();
         }
 	}

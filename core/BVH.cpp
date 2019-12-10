@@ -25,7 +25,7 @@ Eigen::Matrix3d R_y(double y)
 	R <<cosa ,0,sina,
 		0    ,1,   0,
 		-sina,0,cosa;
-	return R;	
+	return R;
 }
 Eigen::Matrix3d R_z(double z)
 {
@@ -35,7 +35,7 @@ Eigen::Matrix3d R_z(double z)
 	R<<	cosa,-sina,0,
 		sina,cosa ,0,
 		0   ,0    ,1;
-	return R;		
+	return R;
 }
 BVHNode::
 BVHNode(const std::string& name,BVHNode* parent)
@@ -57,7 +57,7 @@ BVHNode::
 Set(const Eigen::VectorXd& m_t)
 {
 	mR.setIdentity();
-	
+
 	for(int i=0;i<mNumChannels;i++)
 	{
 		switch(mChannel[i])
@@ -127,11 +127,11 @@ GetMotion(double t)
 	k = std::max(0,std::min(k,mNumTotalFrames-1));
 	double dt = t/mTimeStep - std::floor(t/mTimeStep);
 	Eigen::VectorXd m_t = mMotions[k];
-	
+
 	for(auto& bn: mMap)
 		bn.second->Set(m_t);
-	
-	
+
+
 	int dof = mSkeleton->getNumDofs();
 	Eigen::VectorXd p = Eigen::VectorXd::Zero(dof);
 
@@ -343,17 +343,17 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::i
 			is>>buffer;
 			int n;
 			n= atoi(buffer);
-			
+
 			for(int i=0;i<n;i++)
 			{
 				is>>buffer;
 				c_name.push_back(std::string(buffer));
 			}
-			
+
 			new_node->SetChannel(channel_offset,c_name);
 
-			
-			
+
+
 			channel_offset+=n;
 		}
 		else if(!strcmp(buffer,"JOINT"))
@@ -369,7 +369,7 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::i
 			new_node->AddChild(child);
 		}
 	}
-	
+
 	return new_node;
 }
 BVHNode*
@@ -433,6 +433,7 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::s
 
     return new_node;
 }
+
 std::map<std::string,MASS::BVHNode::CHANNEL> BVHNode::CHANNEL_NAME =
 {
 	{"Xposition",Xpos},
@@ -448,4 +449,40 @@ std::map<std::string,MASS::BVHNode::CHANNEL> BVHNode::CHANNEL_NAME =
 	{"Zrotation",Zrot},
 	{"ZROTATION",Zrot}
 };
-};
+
+    WalkFSM::
+    WalkFSM()
+    {
+        reset();
+    }
+
+    void
+    WalkFSM::
+    reset()
+    {
+        this->is_last_sw_r = false;
+        this->step_count = 0;
+        this->is_double_st = false;
+    }
+
+    void
+    WalkFSM::
+    check(bool bool_l, bool bool_r)
+    {
+        if (!this->is_double_st && bool_l && bool_r)
+        {
+            this->is_double_st = true;
+            this->step_count += 1;
+            this->is_last_sw_r = !(this->is_last_sw_r);
+        }
+        else if ( this->is_double_st && !bool_l && this->is_last_sw_r)
+        {
+            this->is_double_st = false;
+        }
+        else if ( this->is_double_st && !bool_r && !(this->is_last_sw_r))
+        {
+            this->is_double_st = false;
+        }
+    }
+}
+

@@ -11,79 +11,92 @@
  
 namespace MASS
 {
-Eigen::Matrix3d R_x(double x);
-Eigen::Matrix3d R_y(double y);
-Eigen::Matrix3d R_z(double z);
-class BVHNode
-{
-public:
-	enum CHANNEL
-	{
-		Xpos=0,
-		Ypos=1,
-		Zpos=2,
-		Xrot=3,
-		Yrot=4,
-		Zrot=5
-	}; 
-	static std::map<std::string,MASS::BVHNode::CHANNEL> CHANNEL_NAME;
+    Eigen::Matrix3d R_x(double x);
+    Eigen::Matrix3d R_y(double y);
+    Eigen::Matrix3d R_z(double z);
+
+    class BVHNode
+    {
+    public:
+        enum CHANNEL
+        {
+            Xpos=0,
+            Ypos=1,
+            Zpos=2,
+            Xrot=3,
+            Yrot=4,
+            Zrot=5
+        };
+        static std::map<std::string,MASS::BVHNode::CHANNEL> CHANNEL_NAME;
 
 
-	BVHNode(const std::string& name,BVHNode* parent);
-	void SetChannel(int c_offset,std::vector<std::string>& c_name);
-	void Set(const Eigen::VectorXd& m_t);
-	void Set(const Eigen::Matrix3d& R_t);
-	Eigen::Matrix3d Get();
+        BVHNode(const std::string& name,BVHNode* parent);
+        void SetChannel(int c_offset,std::vector<std::string>& c_name);
+        void Set(const Eigen::VectorXd& m_t);
+        void Set(const Eigen::Matrix3d& R_t);
+        Eigen::Matrix3d Get();
 
-	void AddChild(BVHNode* child);
-	BVHNode* GetNode(const std::string& name);
-private:
-	BVHNode* mParent;
-	std::vector<BVHNode*> mChildren;
+        void AddChild(BVHNode* child);
+        BVHNode* GetNode(const std::string& name);
+    private:
+        BVHNode* mParent;
+        std::vector<BVHNode*> mChildren;
 
-	Eigen::Matrix3d mR;
-	std::string mName;
+        Eigen::Matrix3d mR;
+        std::string mName;
 
-	int mChannelOffset;
-	int mNumChannels;
-	std::vector<BVHNode::CHANNEL> mChannel;
-};
-class BVH
-{
-public:
-	BVH(const dart::dynamics::SkeletonPtr& skel,const std::map<std::string,std::string>& bvh_map);
+        int mChannelOffset;
+        int mNumChannels;
+        std::vector<BVHNode::CHANNEL> mChannel;
+    };
 
-	Eigen::VectorXd GetMotion(double t);
+    class BVH
+    {
+    public:
+        BVH(const dart::dynamics::SkeletonPtr& skel,const std::map<std::string,std::string>& bvh_map);
 
-	Eigen::Matrix3d Get(const std::string& bvh_node);
+        Eigen::VectorXd GetMotion(double t);
 
-	double GetMaxTime(){return (mNumTotalFrames)*mTimeStep;}
-	double GetTimeStep(){return mTimeStep;}
-	void Parse(const std::string& file, bool cyclic=true);
-    void ParseStr(const std::string& str, bool cyclic=true);
+        Eigen::Matrix3d Get(const std::string& bvh_node);
 
-	const std::map<std::string,std::string>& GetBVHMap(){return mBVHMap;}
-	const Eigen::Isometry3d& GetT0(){return T0;}
-	const Eigen::Isometry3d& GetT1(){return T1;}
-	bool IsCyclic(){return mCyclic;}
-public:
-	bool mCyclic;
-	std::map<std::string,BVHNode*> mMap;
-    std::vector<Eigen::VectorXd> mMotions;
-	double mTimeStep;
-	int mNumTotalChannels;
-	int mNumTotalFrames;
+        double GetMaxTime(){return (mNumTotalFrames)*mTimeStep;}
+        double GetTimeStep(){return mTimeStep;}
+        void Parse(const std::string& file, bool cyclic=true);
+        void ParseStr(const std::string& str, bool cyclic=true);
 
-	BVHNode* mRoot;
+        const std::map<std::string,std::string>& GetBVHMap(){return mBVHMap;}
+        const Eigen::Isometry3d& GetT0(){return T0;}
+        const Eigen::Isometry3d& GetT1(){return T1;}
+        bool IsCyclic(){return mCyclic;}
+    public:
+        bool mCyclic;
+        std::map<std::string,BVHNode*> mMap;
+        std::vector<Eigen::VectorXd> mMotions;
+        double mTimeStep;
+        int mNumTotalChannels;
+        int mNumTotalFrames;
 
-	dart::dynamics::SkeletonPtr mSkeleton;
-	std::map<std::string,std::string> mBVHMap;
+        BVHNode* mRoot;
 
-	Eigen::Isometry3d T0,T1;
-	BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::ifstream& is);
-    BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::stringstream& is);
-};
+        dart::dynamics::SkeletonPtr mSkeleton;
+        std::map<std::string,std::string> mBVHMap;
 
-};
+        Eigen::Isometry3d T0,T1;
+        BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::ifstream& is);
+        BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::stringstream& is);
+    };
+
+    class WalkFSM {
+    public:
+        WalkFSM();
+        void reset();
+        void check(bool bool_l, bool bool_r);
+
+        bool is_last_sw_r;
+        int step_count;
+        bool is_double_st;
+    };
+
+}
 
 #endif

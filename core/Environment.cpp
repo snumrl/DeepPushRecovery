@@ -31,11 +31,25 @@ Environment()
     sample_param_as_normal = false;
     walking_param_change = false;
 
+    world_start_time = 0.;
+
+    walk_fsm.reset();
+
     push_enable = false;
     push_step = 8;
     push_duration = .2;
-    push_force = 50.;
-    push_start_timing = 50.;
+    push_force = 0.;
+    push_force_mean = 0.;
+    push_force_std = 0.;
+    push_start_timing = 0.5;
+    push_start_timing_mean = 0.;
+    push_start_timing_std = 0.;
+
+    push_start_time = 0.;
+    push_set = false;
+
+    mechanicalWork = 0.;
+    generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
 }
 
 Environment::
@@ -56,11 +70,25 @@ Environment(int _index)
     sample_param_as_normal = false;
     walking_param_change = false;
 
+    world_start_time = 0.;
+
+    walk_fsm.reset();
+
     push_enable = false;
     push_step = 8;
     push_duration = .2;
-    push_force = 50.;
-    push_start_timing = 50.;
+    push_force = 0.;
+    push_force_mean = 0.;
+    push_force_std = 0.;
+    push_start_timing = 0.5;
+    push_start_timing_mean = 0.;
+    push_start_timing_std = 0.;
+
+    push_start_time = 0.;
+    push_set = false;
+
+    mechanicalWork = 0.;
+    generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
 }
 
 
@@ -75,52 +103,52 @@ Initialize(const std::string& meta_file,bool load_obj)
 		return;
 	}
 	std::string str;
-	std::string index;
+	std::string _index;
 	std::stringstream ss;
 	MASS::Character* character = new MASS::Character(this->index);
 	while(!ifs.eof())
 	{
 		str.clear();
-		index.clear();
+		_index.clear();
 		ss.clear();
 
 		std::getline(ifs,str);
 		ss.str(str);
-		ss>>index;
-		if(!index.compare("use_muscle"))
+		ss >> _index;
+		if(!_index.compare("use_muscle"))
 		{	
 			std::string str2;
 			ss>>str2;
 			this->SetUseMuscle(!str2.compare("true"));
 		}
-		else if(!index.compare("con_hz")){
+		else if(!_index.compare("con_hz")){
 			int hz;
 			ss>>hz;
 			this->SetControlHz(hz);
 		}
-		else if(!index.compare("sim_hz")){
+		else if(!_index.compare("sim_hz")){
 			int hz;
 			ss>>hz;
 			this->SetSimulationHz(hz);
 		}
-		else if(!index.compare("sim_hz")){
+		else if(!_index.compare("sim_hz")){
 			int hz;
 			ss>>hz;
 			this->SetSimulationHz(hz);
 		}
-		else if(!index.compare("skel_file")){
+		else if(!_index.compare("skel_file")){
 			std::string str2;
 			ss>>str2;
 
 			character->LoadSkeleton(std::string(MASS_ROOT_DIR)+str2,load_obj);
 		}
-		else if(!index.compare("muscle_file")){
+		else if(!_index.compare("muscle_file")){
 			std::string str2;
 			ss>>str2;
 			if(this->GetUseMuscle())
 				character->LoadMuscles(std::string(MASS_ROOT_DIR)+str2);
 		}
-		else if(!index.compare("bvh_file")){
+		else if(!_index.compare("bvh_file")){
 			std::string str2,str3;
 
 			ss>>str2>>str3;
@@ -129,13 +157,13 @@ Initialize(const std::string& meta_file,bool load_obj)
 				cyclic = true;
 //			character->LoadBVH(std::string(MASS_ROOT_DIR)+str2,cyclic);
 		}
-		else if(!index.compare("reward_param")){
+		else if(!_index.compare("reward_param")){
 			double a,b,c,d;
 			ss>>a>>b>>c>>d;
 			this->SetRewardParameters(a,b,c,d);
 
 		}
-		else if(index == "walking_param") {
+		else if(_index == "walking_param") {
 		    std::string str1;
 		    ss >> str1;
             crouch_angle_set.push_back(atoi(str1.c_str()));
@@ -148,10 +176,22 @@ Initialize(const std::string& meta_file,bool load_obj)
             walk_speed_var_vec.push_back(e);
 
 		}
-		else if(index == "walking_sample") {
+		else if(_index == "walking_sample") {
 		    std::string str1;
 		    ss >> str1;
 		    this->sample_param_as_normal = (str1 == "normal");
+		}
+		else if(_index == "push_param") {
+		    int a;
+		    double b, c, d, e, f;
+		    ss >> a >> b >> c >> d >> e >> f;
+		    push_step = a;
+		    push_duration = b;
+		    push_force_mean = c;
+		    push_force_std = d;
+		    push_start_timing_mean = e;
+		    push_start_timing_std = f;
+		    push_enable = true;
 		}
 	}
 	ifs.close();
@@ -173,6 +213,9 @@ Initialize(const std::string& meta_file,bool load_obj)
     walking_param_change = crouch_angle_set.size() > 1
             || stride_length_var_vec[0] > DBL_EPSILON
             || walk_speed_var_vec[0] > DBL_EPSILON;
+
+    push_force = push_force_mean;
+    push_start_timing = push_start_timing_mean;
 
     character->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
 	
@@ -231,15 +274,24 @@ Reset(bool RSI)
 	mCharacter->GetSkeleton()->clearInternalForces();
 	mCharacter->GetSkeleton()->clearExternalForces();
 	
-	double t = 0.2;
 
     if(walking_param_change) {
         SampleWalkingParams();
         mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
     }
 
+    SamplePushParams();
+
+    this->walk_fsm.reset();
+    this->push_start_time = DBL_MAX;
+    this->push_set = false;
+    this->mechanicalWork = 0.;
+
+    double t = 0.2;
+
 	if(RSI)
 		t = dart::math::random(0.0,mCharacter->GetBVH()->GetMaxTime()*0.9);
+	world_start_time = t;
 	mWorld->setTime(t);
 	mCharacter->Reset();
 
@@ -256,7 +308,7 @@ Reset(bool RSI)
 void
 Environment::
 Step()
-{	
+{
 	if(mUseMuscle)
 	{
 		int count = 0;
@@ -300,13 +352,33 @@ Step()
 		mCharacter->GetSkeleton()->setForces(mDesiredTorque);
 	}
 
+	// 1. check foot contact state
+	double current_time = this->GetWorld()->getTime();
+	double bvh_cycle_duration = this->GetCharacter()->GetBVH()->GetMaxTime();
+    double half_cycle_duration = bvh_cycle_duration/2.;
+
+    double phase = std::fmod(current_time, bvh_cycle_duration);
+    int steps = (int) (current_time/bvh_cycle_duration);
+    if (world_start_time >= 0.5)
+        steps--;
+
+	if (phase >= 0.5 && phase - (1./this->mSimulationHz) <= 0.5) {
+        if (steps == 3 && !push_set) {
+            push_set = true;
+            this->push_start_time = this->GetWorld()->getTime() +
+                                    this->push_start_timing * half_cycle_duration;
+        }
+    }
+
+    // 2. push
+	if (push_enable && this->GetWorld()->getTime() >= this->push_start_time && this->GetWorld()->getTime() <= this->push_start_time + push_duration) {
+	    this->GetCharacter()->GetSkeleton()->getBodyNode("ArmL")->addExtForce(-Eigen::Vector3d(push_force, 0., 0.));
+    }
+
+	// 3. for cot
+    this->mechanicalWork += (1./this->mSimulationHz) * this->mDesiredTorque.norm() * mCharacter->GetSkeleton()->getVelocities().norm();
+
 	mWorld->step();
-	// Eigen::VectorXd p_des = mTargetPositions;
-	// //p_des.tail(mAction.rows()) += mAction;
-	// mCharacter->GetSkeleton()->setPositions(p_des);
-	// mCharacter->GetSkeleton()->setVelocities(mTargetVelocities);
-	// mCharacter->GetSkeleton()->computeForwardKinematics(true,false,false);
-	// mWorld->setTime(mWorld->getTime()+mWorld->getTimeStep());
 
 	mSimCount++;
 }
@@ -365,7 +437,7 @@ IsEndOfEpisode()
 		isTerminal =true;
 	else if (dart::math::isNan(p) || dart::math::isNan(v))
 		isTerminal =true;
-	else if(mWorld->getTime()>10.0)
+	else if(mWorld->getTime() - world_start_time > 10.0)
 		isTerminal =true;
 	
 	return isTerminal;
@@ -502,7 +574,9 @@ GetReward()
 	double r_ee = exp_of_squared(ee_diff,40.0);
 	double r_com = exp_of_squared(com_diff,10.0);
 
-	Eigen::Vector3d com_vel = skel->getCOMLinearVelocity().normalized();
+	Eigen::Vector3d com_vel = skel->getCOMLinearVelocity();
+	com_vel[1] = 0.;
+	com_vel.normalize();
 	double r_g = exp_of_squared(com_vel[2]-1., 40.0);
 
 	double r = 0.9 * r_ee*(w_q*r_q + w_v*r_v) + 0.1 * r_g;
@@ -514,7 +588,6 @@ void
 Environment::
 SampleWalkingParams()
 {
-    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
     crouch_angle_index = 0;
     if (crouch_angle_set.size() > 1) {
         std::uniform_int_distribution<int> crouch_angle_distribution(0, crouch_angle_set.size()-1);
@@ -610,6 +683,23 @@ SampleWalkingParams()
     // std::cout << "Environment::SampleWalkingParams: " << crouch_angle << " " << stride_length << " " << walk_speed << std::endl;
 }
 
+void Environment::SamplePushParams() {
+    if (push_force_std > DBL_EPSILON) {
+        std::normal_distribution<double> gaussian(push_force_mean, push_force_std);
+        while((push_force = gaussian(generator)) < 0.);
+        // std::cout << "Sampled push force: " << push_force << std::endl;
+    }
+
+    if (push_start_timing_std > DBL_EPSILON) {
+        std::normal_distribution<double> gaussian(push_start_timing_mean, push_start_timing_std);
+        do{
+            push_start_timing = gaussian(generator);
+        }
+        while(push_start_timing < 0. || push_start_timing > 0.9);
+        // std::cout << "Sampled push timing: " << push_start_timing << std::endl;
+    }
+}
+
 void
 Environment::
 SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed)
@@ -623,12 +713,14 @@ SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed)
 }
 void
 Environment::
-SetPushParams(int _push_step, double _push_duration, double _push_force, double _push_start_timing)
+SetPushParams(int _push_step, double _push_duration, double _push_force_mean, double _push_force_std, double _push_start_timing_mean, double _push_start_timing_std)
 {
     push_step = _push_step;
     push_duration = _push_duration;
-    push_force = _push_force;
-    push_start_timing = _push_start_timing;
+    push_force_mean = _push_force_mean;
+    push_force_std = _push_force_std;
+    push_start_timing_mean = _push_start_timing_mean;
+    push_start_timing_std = _push_start_timing_std;
     push_enable = true;
 }
 
@@ -678,7 +770,7 @@ PrintWalkingParams() {
 
 void
 Environment::
-SampleStrategy(int flag)
+SetSampleStrategy(int flag)
 {
     if (flag == 0)
         // uniform sampling
