@@ -574,10 +574,12 @@ GetReward()
 	double r_ee = exp_of_squared(ee_diff,40.0);
 	double r_com = exp_of_squared(com_diff,10.0);
 
-	Eigen::Vector3d com_vel = skel->getCOMLinearVelocity();
-	com_vel[1] = 0.;
-	com_vel.normalize();
-	double r_g = exp_of_squared(com_vel[2]-1., 40.0);
+	// Eigen::Vector3d com_vel = skel->getCOMLinearVelocity();
+	// com_vel[1] = 0.;
+	// com_vel.normalize();
+	// double r_g = exp_of_squared(com_vel[2]-1., 40.0);
+
+    double r_g = exp_of_squared(abs(skel->getCOM()[0]), 10.0);
 
 	double r = 0.9 * r_ee*(w_q*r_q + w_v*r_v) + 0.1 * r_g;
 

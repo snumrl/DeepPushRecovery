@@ -68,6 +68,8 @@ public:
 
 	void SetSampleStrategy(int flag);
 
+	void SetPushEnable(bool flag){push_enable = flag;}
+
 	double GetMechanicalWork(){return this->mechanicalWork;}
 
 private:
