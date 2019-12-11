@@ -38,6 +38,7 @@ PushSim(const std::string &meta_file, const std::string& nn_path)
     mEnv = new MASS::Environment(0);
     dart::math::seedRand();
     mEnv->Initialize(meta_file);
+    mEnv->SetPushEnable(false);
 
     // mEnv->PrintWalkingParams();
 
@@ -252,6 +253,8 @@ simulatePrepare()
 
     this->travelDistance = 0.;
     this->last_root_pos.setZero();
+
+    this->first_root_pos.setZero();
 }
 
 
@@ -271,6 +274,9 @@ PushStep()
 
     if(last_step_count + 1 == this->walk_fsm.step_count) {
         // std::cout << last_step_count << "->" << this->walk_fsm.step_count << " "<< this->GetSimulationTime() << std::endl;
+    }
+    if(last_step_count == 0 && this->walk_fsm.step_count == 1) {
+        this->first_root_pos = this->GetBodyPosition("Pelvis");
     }
 
     if (this->walk_fsm.step_count >= 3 && this->walk_fsm.step_count <= 9 && last_step_count + 1 == this->walk_fsm.step_count) {
@@ -292,7 +298,8 @@ PushStep()
         this->info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
         // this->info_root_pos[1][1] = 0.;
 
-        this->walking_dir = this->info_root_pos[1] - this->info_root_pos[0];
+        // this->walking_dir = this->info_root_pos[1] - this->info_root_pos[0];
+        this->walking_dir = this->info_root_pos[1] - this->first_root_pos;
         this->walking_dir[1] = 0.;
         this->walking_dir.normalize();
 
@@ -347,6 +354,7 @@ PushStep()
             // this->max_detour_on_line = this->info_root_pos[0] + this->walking_dir.dot(root_pos_plane - point_on_line) * this->walking_dir;
             // this->max_detour_on_line[1] = this->info_root_pos[1][1];
             this->max_detour_on_line = this->pushed_start_pos + this->walking_dir.dot(root_pos_plane - point_on_line) * this->walking_dir;
+            // TODO: second max
         }
 
         if(this->pushed_step > 5)
@@ -376,7 +384,9 @@ simulate(){
     simulatePrepare();
 
     while (this->valid) {
-        if (this->GetSimulationTime() >= this->push_start_time + 2.)
+        PushStep();
+
+        if (this->GetSimulationTime() >= this->push_start_time + 10.)
             break;
 
         if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
@@ -389,7 +399,6 @@ simulate(){
             break;
         }
 
-        PushStep();
     }
     if (pushed_step == 0 && this->valid) {
         this->stopcode = 4;  // pushed but pushed distance is minus

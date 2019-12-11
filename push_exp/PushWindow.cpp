@@ -13,6 +13,7 @@ PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path)
 	mEnv->PrintWalkingParams();
 	// normally sample
     this->mEnv->SetSampleStrategy(1);
+    mEnv->SetPushEnable(false);
 
 	mBackground[0] = 1.0;
 	mBackground[1] = 1.0;
@@ -28,6 +29,8 @@ PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path,
     :PushSim(meta_file, nn_path, muscle_nn_path),mFocus(true),mSimulating(false),mDrawOBJ(false),mDrawShadow(true),mBVHPlaying(false)
 {
     mEnv->PrintWalkingParams();
+    this->mEnv->SetSampleStrategy(1);
+    mEnv->SetPushEnable(false);
 
     mBackground[0] = 1.0;
     mBackground[1] = 1.0;
@@ -141,6 +144,7 @@ void PushWindow::displayTimer(int _val) {
             mSimulating = !mSimulating;
             std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
         }
+
     }
 	else if(!this->valid && mSimulating){
 	    mSimulating = !mSimulating;

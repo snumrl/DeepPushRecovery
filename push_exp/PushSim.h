@@ -114,6 +114,7 @@ namespace MASS {
         double travelDistance;
 
         Eigen::Vector3d last_root_pos;
+        Eigen::Vector3d first_root_pos;
 
         // parameters
         int push_step;
