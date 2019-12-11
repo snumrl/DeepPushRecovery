@@ -80,6 +80,7 @@ def worker_simulation(sim, param):
 
     stopcode = sim.simulate()
     # stopcode = 0
+    print(stopcode)
 
     if stopcode == 1:
         pushed_length = 0.

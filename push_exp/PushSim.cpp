@@ -116,13 +116,40 @@ Step()
 
 //	std::cout << mEnv->GetCharacter()->GetSkeleton()->getBodyNode(0)->getTransform().translation() << std::endl;
 
-    if(mEnv->GetUseMuscle())
-    {
+    if(mEnv->GetUseMuscle()) {
         int inference_per_sim = 2;
-        for(int i=0 ; i < num ; i += inference_per_sim){
+        for(int i=0 ; i < num ; i += inference_per_sim) {
             Eigen::VectorXd mt = mEnv->GetMuscleTorques();
             mEnv->SetActivationLevels(GetActivationFromNN(mt));
-            for(int j=0;j<inference_per_sim;j++){
+            for(int j=0;j<inference_per_sim;j++) {
+                mEnv->Step();
+            }
+        }
+    }
+    else {
+        for(int i=0;i<num;i++) {
+            mEnv->Step();
+        }
+    }
+}
+
+void
+PushSim::
+PushStep()
+{
+    int num = mEnv->GetSimulationHz() / mEnv->GetControlHz();
+    mEnv->SetAction(GetActionFromNN());
+
+    last_root_pos = GetBodyPosition("Pelvis");
+    last_root_pos[1] = 0.;
+
+    if(mEnv->GetUseMuscle()) {
+        int inference_per_sim = 2;
+        for(int i=0 ; i < num ; i += inference_per_sim) {
+            Eigen::VectorXd mt = mEnv->GetMuscleTorques();
+            mEnv->SetActivationLevels(GetActivationFromNN(mt));
+            for(int j=0;j<inference_per_sim;j++) {
+                _PushStep();
                 if(this->push_start_time <= this->GetSimulationTime() && this->GetSimulationTime() <= this->push_end_time) {
                     this->AddBodyExtForce("ArmL", this->push_force_vec);
                 }
@@ -130,15 +157,19 @@ Step()
             }
         }
     }
-    else
-    {
+    else {
         for(int i=0;i<num;i++) {
+            _PushStep();
             if(this->push_start_time <= this->GetSimulationTime() && this->GetSimulationTime() <= this->push_end_time) {
                 this->AddBodyExtForce("ArmL", this->push_force_vec);
             }
             mEnv->Step();
         }
     }
+
+    Eigen::Vector3d root_pos = this->GetBodyPosition("Pelvis");
+    root_pos[1] = 0.;
+    this->travelDistance += (root_pos - last_root_pos).norm();
 }
 
 void
@@ -241,6 +272,8 @@ simulatePrepare()
 
     this->walk_fsm.reset();
 
+    this->push_ready = false;
+
     this->pushed_start = false;
     this->pushed_start_pos.setZero();
     this->pushed_start_foot_pos.setZero();
@@ -260,7 +293,7 @@ simulatePrepare()
 
 void
 PushSim::
-PushStep()
+PushStep_old()
 {
     bool bool_l = this->IsBodyContact("TalusL") || this->IsBodyContact("FootThumbL")
                   || this->IsBodyContact("FootPinkyL");
@@ -346,7 +379,7 @@ PushStep()
         // std::cout << point_on_line << std::endl;
         // std::cout << "detour_length: " << detour_length << std::endl;
 
-        if (this->pushed_length < detour_length) {
+        if (this->walk_fsm.step_count < 13 && this->pushed_length < detour_length) {
             this->pushed_length = detour_length;
             this->pushed_step = this->walk_fsm.step_count - 8;
             this->max_detour_root_pos = GetBodyPosition("Pelvis");
@@ -357,10 +390,9 @@ PushStep()
             // TODO: second max
         }
 
-        if(this->pushed_step > 5)
+        if(this->pushed_step > 3)
         {
             this->stopcode = 3;  // pushed, didn't falling down but distance is so far
-            this->valid = false;
         }
     }
     if (this->GetSimulationTime() >= this->push_mid_time && !pushed_mid) {
@@ -376,6 +408,91 @@ PushStep()
     root_pos[1] = 0.;
     this->travelDistance += (root_pos - last_root_pos).norm();
 
+}
+
+void PushSim::_PushStep() {
+    const double current_time = GetSimulationTime();
+    const double bvh_cycle_duration = mEnv->GetCharacter()->GetBVH()->GetMaxTime();
+    const double half_cycle_duration = bvh_cycle_duration / 2.;
+
+    const double phase = std::fmod(current_time, half_cycle_duration);
+    const int steps = (int) (current_time / half_cycle_duration) + 1;
+
+    if (phase >= 0. && phase - (1./mEnv->GetSimulationHz()) <= 0.) {
+        // foot contact
+        if (steps == 4) {
+            info_start_time = current_time;
+            info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
+        }
+
+        if (steps >= 3 && steps <= 9) {
+            if(steps %2 == 0)
+                info_left_foot_pos.push_back(GetBodyPosition("TalusL"));
+            else
+                info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
+        }
+
+        if (steps == 8 && !push_ready) {
+            push_ready = true;
+            info_end_time = current_time;
+            pushed_step_time = current_time;
+            info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
+
+            walking_dir = info_root_pos[1] - info_root_pos[0];
+            walking_dir[1] = 0.;
+            walking_dir.normalize();
+
+            push_start_time = current_time + (push_start_timing/100.) * half_cycle_duration;
+            push_mid_time = push_start_time + .5 * push_duration;
+            push_end_time = push_start_time + push_duration;
+            push_force_vec = push_force * Eigen::Vector3d::UnitY().cross(walking_dir);
+
+            //TODO:
+            info_right_foot_pos_with_toe_off.push_back(this->GetBodyPosition("FootThumbR"));
+            pushed_step_time_toe_off = current_time;
+        }
+
+        if(steps == 9) {
+            pushed_next_step_time = current_time;
+            //TODO:
+            pushed_next_step_time_toe_off = current_time;
+            info_right_foot_pos_with_toe_off.push_back(this->GetBodyPosition("FootThumbR"));
+        }
+    }
+
+    if (current_time >= push_start_time && steps < 13) {
+        Eigen::Vector3d root_pos_plane = GetBodyPosition("Pelvis");
+        if (!pushed_start) {
+            pushed_start = true;
+            pushed_start_pos = root_pos_plane;
+            pushed_start_foot_pos = GetBodyPosition("TalusR");
+            pushed_start_toe_pos = GetBodyPosition("FootThumbR");
+        }
+        root_pos_plane[1] = 0.;
+        Eigen::Vector3d point_on_line = pushed_start_pos;
+        point_on_line[1] = 0.;
+        double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
+
+        if (pushed_length < detour_length) {
+            pushed_length = detour_length;
+            pushed_step = steps - 8;
+            max_detour_root_pos = GetBodyPosition("Pelvis");
+            max_detour_root_pos[1] = info_root_pos[1][1];
+            max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
+        }
+
+        if(pushed_step > 3)
+        {
+            stopcode = 3;  // pushed, didn't falling down but distance is so far
+        }
+    }
+
+    if (current_time >= push_mid_time && !pushed_mid) {
+        pushed_mid = true;
+        pushed_mid_pos = GetBodyPosition("Pelvis");
+        pushed_mid_foot_pos = GetBodyPosition("TalusR");
+        pushed_mid_toe_pos = GetBodyPosition("FootThumbR");
+    }
 }
 
 int
@@ -402,6 +519,9 @@ simulate(){
     }
     if (pushed_step == 0 && this->valid) {
         this->stopcode = 4;  // pushed but pushed distance is minus
+        this->valid = false;
+    }
+    if (pushed_step > 3 && this->valid){
         this->valid = false;
     }
 

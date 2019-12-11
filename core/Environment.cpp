@@ -46,7 +46,7 @@ Environment()
     push_start_timing_std = 0.;
 
     push_start_time = 0.;
-    push_set = false;
+    push_ready = false;
 
     mechanicalWork = 0.;
     generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
@@ -85,7 +85,7 @@ Environment(int _index)
     push_start_timing_std = 0.;
 
     push_start_time = 0.;
-    push_set = false;
+    push_ready = false;
 
     mechanicalWork = 0.;
     generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
@@ -284,7 +284,7 @@ Reset(bool RSI)
 
     this->walk_fsm.reset();
     this->push_start_time = DBL_MAX;
-    this->push_set = false;
+    this->push_ready = false;
     this->mechanicalWork = 0.;
 
     double t = 0.2;
@@ -353,25 +353,22 @@ Step()
 	}
 
 	// 1. check foot contact state
-	double current_time = this->GetWorld()->getTime();
-	double bvh_cycle_duration = this->GetCharacter()->GetBVH()->GetMaxTime();
+	double current_time = GetWorld()->getTime();
+	double bvh_cycle_duration = GetCharacter()->GetBVH()->GetMaxTime();
     double half_cycle_duration = bvh_cycle_duration/2.;
 
-    double phase = std::fmod(current_time, bvh_cycle_duration);
-    int steps = (int) (current_time/bvh_cycle_duration);
-    if (world_start_time >= 0.5)
-        steps--;
+    // double phase = std::fmod(current_time, bvh_cycle_duration);
+    int steps = (int) (current_time/half_cycle_duration) + 1;
+    // if (world_start_time >= 0.5)
+    //    steps--;
 
-	if (phase >= 0.5 && phase - (1./this->mSimulationHz) <= 0.5) {
-        if (steps == 3 && !push_set) {
-            push_set = true;
-            this->push_start_time = this->GetWorld()->getTime() +
-                                    this->push_start_timing * half_cycle_duration;
-        }
+    if (steps == 8 && !push_ready) {
+        push_ready = true;
+        push_start_time = current_time + push_start_timing * half_cycle_duration;
     }
 
     // 2. push
-	if (push_enable && this->GetWorld()->getTime() >= this->push_start_time && this->GetWorld()->getTime() <= this->push_start_time + push_duration) {
+	if (push_enable && current_time >= push_start_time && current_time <= push_start_time + push_duration) {
 	    this->GetCharacter()->GetSkeleton()->getBodyNode("ArmL")->addExtForce(-Eigen::Vector3d(push_force, 0., 0.));
     }
 

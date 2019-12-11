@@ -43,6 +43,7 @@ private:
 	void StepMotion();
 
     void SamplePushForce();
+    void PrintPushParamsSampled();
 
     bool mFocus;
 	bool mSimulating;

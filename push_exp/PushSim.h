@@ -23,7 +23,9 @@ namespace MASS {
         ~PushSim();
 
         void Step();
+        void _PushStep();
         void PushStep();
+        void PushStep_old();
         void Reset(bool RSI = true);
 
         Eigen::VectorXd GetActionFromNN();
@@ -100,6 +102,8 @@ namespace MASS {
         Eigen::Vector3d max_detour_on_line;
 
         WalkFSM walk_fsm;
+
+        bool push_ready;
 
         bool pushed_start;
         Eigen::Vector3d pushed_start_pos;

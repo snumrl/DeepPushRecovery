@@ -130,7 +130,7 @@ private:
     double push_start_timing_std;
 
     double push_start_time;
-    bool push_set;
+    bool push_ready;
 
     double mechanicalWork;
 };

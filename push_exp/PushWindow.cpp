@@ -92,6 +92,7 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
         mRootTrajectory.clear();
         this->mEnv->PrintWalkingParamsSampled();
         this->SamplePushForce();
+        this->PrintPushParamsSampled();
         simulatePrepare();
         std::cout << "Reset!" << std::endl;
         mSimulating = true;
@@ -161,4 +162,12 @@ void PushWindow::SamplePushForce() {
     std::normal_distribution<double> push_force_dist(.535, .096);
     std::normal_distribution<double> push_timing_dist(34, 21);
     this->setPushParams(8, .2, -abs(push_force_dist(generator) * 72.*5.), abs(push_timing_dist(generator)));
+}
+
+void PushWindow::PrintPushParamsSampled() {
+    std::cout << "push_step: " << this->push_step << std::endl;
+    std::cout << "push_duration: " << this->push_duration << std::endl;
+    std::cout << "push_force: " << this->push_force << std::endl;
+    std::cout << "push_start_timing: " << this->push_start_timing << std::endl;
+
 }
