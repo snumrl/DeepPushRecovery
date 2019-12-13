@@ -209,7 +209,7 @@ class PPO(object):
             
             if self.use_adaptive_sampling:
                 for i in range(size):
-                    self.marginal_buffer.Push(states[i][-self.marginal_state_num:], values[:-1])
+                    self.marginal_buffer.Push(states[i][-self.marginal_state_num:], values[i])
 
         self.num_episode = len(self.total_episodes)
         self.num_tuple = len(self.replay_buffer.buffer)
