@@ -157,6 +157,8 @@ class PPO(object):
         self.marginal_k = 10.
         self.mcmc_burn_in = 100
         self.mcmc_period = 20
+        if use_cuda:
+            self.marginal_model.cuda()
 
         self.total_episodes = []
         self.episodes = [None]*self.num_slaves
@@ -407,6 +409,10 @@ class PPO(object):
                 self.marginal_loss = loss_marginal.cpu().detach().numpy().tolist()
                 self.marginal_optimizer.zero_grad()
                 loss_marginal.backward(retain_graph=True)
+                #TODO:
+                # for param in self.marginal_model.parameters():
+                #     if param.grad is not None:
+                #         param.grad.data.clamp_(-0.5, 0.5)
                 self.marginal_optimizer.step()
 
                 # Marginal value average
