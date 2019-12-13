@@ -1,5 +1,7 @@
 #include "EnvManager.h"
 #include "DARTHelper.h"
+#include <tuple>
+#include <random>
 #include <omp.h>
 
 EnvManager::
@@ -71,6 +73,7 @@ UseMuscle()
 {
 	return mEnvs[0]->GetUseMuscle();
 }
+
 void
 EnvManager::
 Step(int id)
@@ -242,4 +245,38 @@ GetMuscleTuples()
 	}
 
 	return all;
+}
+
+bool
+EnvManager::
+UseAdaptiveSampling()
+{
+    return mEnvs[0]->GetUseAdaptiveSampling();
+}
+
+np::ndarray
+EnvManager::
+SampleMarginalState()
+{
+	double crouch_angle, stride_length, walking_speed;
+	mEnvs[0]->SampleWalkingParams();
+	std::tie(crouch_angle, stride_length, walking_speed) = mEnvs[0]->GetNormalizedWalkingParams();
+
+	Eigen::VectorXd marginal_state(4);
+	marginal_state << dart::math::random(0., 1.), crouch_angle, stride_length, walking_speed;
+	
+	return toNumPyArray(marginal_state);
+}
+
+void
+EnvManager::
+SetMarginalSampled(const np::ndarray &_marginal_samples, const p::list &_marginal_sample_cumulative_prob)
+{
+    std::vector<Eigen::VectorXd> marginal_samples = toEigenVectorVector(_marginal_samples);
+    std::vector<double> marginal_cumulative_probs(p::len(_marginal_sample_cumulative_prob));
+    for (int i=0; i < marginal_cumulative_probs.size(); i++)
+        marginal_cumulative_probs[i] = p::extract<double>(_marginal_sample_cumulative_prob[i]);
+
+    for (int id = 0; id < mNumEnvs; ++id)
+        mEnvs[id]->SetMarginalSampled(marginal_samples, marginal_cumulative_probs);
 }

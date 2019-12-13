@@ -3,8 +3,15 @@
 #include "dart/dart.hpp"
 #include "Character.h"
 #include "Muscle.h"
+#include <tuple>
+
 namespace MASS
 {
+    enum SAMPLING_TYPE{
+        UNIFORM,
+        NORMAL,
+        ADAPTIVE
+    };
 
 struct MuscleTuple
 {
@@ -55,11 +62,17 @@ public:
 	const Eigen::VectorXd& GetAverageActivationLevels(){return mAverageActivationLevels;}
 	void SetActivationLevels(const Eigen::VectorXd& a){mActivationLevels = a;}
 	bool GetUseMuscle(){return mUseMuscle;}
+	bool GetUseAdaptiveSampling(){return sample_param_type==MASS::ADAPTIVE;}
 
     // push experiments
     bool HasCrouchVariation(){return crouch_angle_set.size() > 1;}
 	void SampleWalkingParams();
+    void SampleWalkingParamsFromMarginalSampled();
     void SamplePushParams();
+	static int GetMarginalStateNum(){return 4;}
+	void SetMarginalSampled(const std::vector<Eigen::VectorXd> &_marginal_samples, const std::vector<double> &marginal_cumulative_probs);
+	std::tuple<int, double, double> GetWalkingParams();
+	std::tuple<double, double, double> GetNormalizedWalkingParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
 	void SetPushParams(int _push_step, double _push_duration, double _push_force_mean, double _push_force_std, double _push_start_timing_mean, double _push_start_timing_std);
     void PrintPushParamsSampled();
@@ -102,6 +115,7 @@ private:
 
     int index;
 
+    double phase; // for adaptive sampling
     int crouch_angle;
     double stride_length;
     double walk_speed;
@@ -113,9 +127,14 @@ private:
     std::vector<double> walk_speed_mean_vec;
     std::vector<double> walk_speed_var_vec;
     std::vector<double> stride_speed_covar_vec;
-    bool sample_param_as_normal;  // if not, uniform sampling
+    int sample_param_type;
 
     bool walking_param_change;
+
+
+    bool marginal_set;
+    std::vector<Eigen::VectorXd> marginal_samples;
+    std::vector<double> marginal_cumulative_probs;
 
     WalkFSM walk_fsm;
 
@@ -133,6 +152,8 @@ private:
     bool push_ready;
 
     double mechanicalWork;
+
+    double muscle_maxforce_ratio;
 };
 };
 

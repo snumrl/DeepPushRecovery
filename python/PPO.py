@@ -26,30 +26,42 @@ LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
 Tensor = FloatTensor
 Episode = namedtuple('Episode',('s','a','r', 'value', 'logprob'))
+
+
 class EpisodeBuffer(object):
     def __init__(self):
         self.data = []
 
-    def Push(self, *args):
-        self.data.append(Episode(*args))
+    def Push(self, *_args):
+        self.data.append(Episode(*_args))
+
     def Pop(self):
         self.data.pop()
+
     def GetData(self):
         return self.data
+
+
 MuscleTransition = namedtuple('MuscleTransition',('JtA','tau_des','L','b'))
+
+
 class MuscleBuffer(object):
-    def __init__(self, buff_size = 10000):
+    def __init__(self, buff_size=10000):
         super(MuscleBuffer, self).__init__()
         self.buffer = deque(maxlen=buff_size)
 
-    def Push(self,*args):
-        self.buffer.append(MuscleTransition(*args))
+    def Push(self, *_args):
+        self.buffer.append(MuscleTransition(*_args))
 
     def Clear(self):
         self.buffer.clear()
+
+
 Transition = namedtuple('Transition',('s','a', 'logprob', 'TD', 'GAE'))
+
+
 class ReplayBuffer(object):
-    def __init__(self, buff_size = 10000):
+    def __init__(self, buff_size=10000):
         super(ReplayBuffer, self).__init__()
         self.buffer = deque(maxlen=buff_size)
 
@@ -60,9 +72,24 @@ class ReplayBuffer(object):
         self.buffer.clear()
 
 
+MarginalTransition = namedtuple('MargianlTransition', ('sb', 'v'))
+
+
+class MargianlBuffer(object):
+    def __init__(self, buff_size=10000):
+        super(MargianlBuffer, self).__init__()
+        self.buffer = deque(maxlen=buff_size)
+
+    def Push(self, *_args):
+        self.buffer.append(MarginalTransition(*_args))
+
+    def Clear(self):
+        self.buffer.clear()
+
+
 class PPO(object):
     def __init__(self, meta_file, num_slaves=16):
-        np.random.seed(seed = int(time.time()))
+        np.random.seed(seed=int(time.time()))
         self.num_slaves = num_slaves
         self.env = EnvManager(meta_file, self.num_slaves)
         self.use_muscle = self.env.UseMuscle()
@@ -92,6 +119,7 @@ class PPO(object):
         self.model = SimulationNN(self.num_state,self.num_action)
 
         self.muscle_model = MuscleNN(self.env.GetNumTotalMuscleRelatedDofs(),self.num_action,self.num_muscles)
+
         if use_cuda:
             self.model.cuda()
             self.muscle_model.cuda()
@@ -115,11 +143,22 @@ class PPO(object):
         self.max_return_epoch = 1
         self.tic = time.time()
 
-        # for push experiments
-        self.has_crouch_variation = self.env.HasCrouchVariation()
-        self.current_return_sum_each_crouch_angle = [0., 0., 0., 0.]
-        self.last_return_sum_each_crouch_angle = [0., 0., 0., 0.]
+        # for adaptive sampling, marginal value training
+        self.use_adaptive_sampling = self.env.UseAdaptiveSampling()
+        self.marginal_state_num = self.env.GetMarginalStateNum()
+        self.marginal_buffer = MargianlBuffer(30000)
+        self.marginal_model = MarginalNN(self.marginal_state_num)
+        self.marginal_value_avg = 1.
+        self.marginal_learning_rate = 1e-3
+        self.marginal_optimizer = optim.SGD(self.marginal_model.parameters(), lr=self.marginal_learning_rate)
+        self.marginal_loss = 0.0
+        self.marginal_samples = []
+        self.marginal_sample_num = 2000
+        self.marginal_k = 10.
+        self.mcmc_burn_in = 100
+        self.mcmc_period = 20
 
+        self.total_episodes = []
         self.episodes = [None]*self.num_slaves
         for j in range(self.num_slaves):
             self.episodes[j] = EpisodeBuffer()
@@ -132,7 +171,7 @@ class PPO(object):
         if self.max_return_epoch == self.num_evaluation:
             self.model.save('../nn/max.pt')
             self.muscle_model.save('../nn/max_muscle.pt')
-        if self.num_evaluation%100 == 0:
+        if self.num_evaluation % 100 == 0:
             self.model.save('../nn/'+str(self.num_evaluation//100)+'.pt')
             self.muscle_model.save('../nn/'+str(self.num_evaluation//100)+'_muscle.pt')
 
@@ -143,6 +182,7 @@ class PPO(object):
     def ComputeTDandGAE(self):
         self.replay_buffer.Clear()
         self.muscle_buffer.Clear()
+        self.marginal_buffer.Clear()
         self.sum_return = 0.0
         for epi in self.total_episodes:
             data = epi.GetData()
@@ -166,6 +206,11 @@ class PPO(object):
 
             for i in range(size):
                 self.replay_buffer.Push(states[i], actions[i], logprobs[i], TD[i], advantages[i])
+            
+            if self.use_adaptive_sampling:
+                for i in range(size):
+                    self.marginal_buffer.Push(states[i][-self.marginal_state_num:], values[:-1])
+
         self.num_episode = len(self.total_episodes)
         self.num_tuple = len(self.replay_buffer.buffer)
         print('SIM : {}'.format(self.num_tuple))
@@ -174,6 +219,36 @@ class PPO(object):
         muscle_tuples = self.env.GetMuscleTuples()
         for i in range(len(muscle_tuples)):
             self.muscle_buffer.Push(muscle_tuples[i][0],muscle_tuples[i][1],muscle_tuples[i][2],muscle_tuples[i][3])
+
+    def SampleStatesForMarginal(self):
+        # MCMC : Metropolitan-Hastings
+        marginal_samples = []
+        marginal_sample_cumulative_prob = []
+        p_sb = 0.
+        mcmc_idx = 0
+        while len(marginal_samples) < self.marginal_sample_num:
+            # Generation
+            state_sb_prime = self.env.SampleMarginalState()
+            
+            # Evaluation
+            marginal_value = self.marginal_model(Tensor(state_sb_prime)).cpu().detach().numpy().reshape(-1)
+            p_sb_prime = math.exp(self.marginal_k * (1. - marginal_value/self.marginal_value_avg) )
+
+            # Rejection
+            if p_sb_prime > np.random.rand() * p_sb:
+                if mcmc_idx > self.mcmc_burn_in:
+                    marginal_samples.append(state_sb_prime)
+                    if len(marginal_sample_cumulative_prob) > 0:
+                        marginal_sample_cumulative_prob.append(p_sb_prime + marginal_sample_cumulative_prob[-1])
+                    else:
+                        marginal_sample_cumulative_prob.append(p_sb_prime)
+                p_sb = p_sb_prime
+                mcmc_idx += 1
+
+        for i in range(len(marginal_sample_cumulative_prob)):
+            marginal_sample_cumulative_prob[i] = marginal_sample_cumulative_prob[i]/marginal_sample_cumulative_prob[-1]
+
+        self.env.SetMarginalSampled(np.asarray(marginal_samples), marginal_sample_cumulative_prob)
 
     def GenerateTransitions(self):
         self.total_episodes = []
@@ -187,7 +262,7 @@ class PPO(object):
         counter = 0
         while True:
             counter += 1
-            if counter%10 == 0:
+            if counter % 10 == 0:
                 print('SIM : {}'.format(local_step),end='\r')
             a_dist,v = self.model(Tensor(states))
             actions = a_dist.sample().cpu().detach().numpy()
@@ -197,7 +272,7 @@ class PPO(object):
             self.env.SetActions(actions)
             if self.use_muscle:
                 mt = Tensor(self.env.GetMuscleTorques())
-                for i in range(self.num_simulation_per_control//2):
+                for _ in range(self.num_simulation_per_control//2):
                     dt = Tensor(self.env.GetDesiredTorques())
                     activations = self.muscle_model(mt,dt).cpu().detach().numpy()
                     self.env.SetActivationLevels(activations)
@@ -273,6 +348,7 @@ class PPO(object):
                 self.optimizer.step()
             print('Optimizing sim nn : {}/{}'.format(j+1,self.num_epochs),end='\r')
         print('')
+
     def OptimizeMuscleNN(self):
         muscle_transitions = np.array(self.muscle_buffer.buffer)
         for j in range(self.num_epochs_muscle):
@@ -312,16 +388,47 @@ class PPO(object):
             print('Optimizing muscle nn : {}/{}'.format(j+1,self.num_epochs_muscle),end='\r')
         self.loss_muscle = loss.cpu().detach().numpy().tolist()
         print('')
+
+    def OptimizeMarginalNN(self):
+        marginal_transitions = np.array(self.marginal_buffer.buffer)
+        for j in range(self.num_epochs):
+            np.random.shuffle(marginal_transitions)
+            for i in range(len(marginal_transitions)//self.batch_size):
+                transitions = marginal_transitions[i*self.batch_size:(i+1)*self.batch_size]
+                batch = MarginalTransition(*zip(*transitions))
+
+                stack_sb = np.vstack(batch.sb).astype(np.float32)
+                stack_v = np.vstack(batch.v).astype(np.float32)
+                
+                v = self.marginal_model(Tensor(stack_sb))
+                
+                # Marginal Loss
+                loss_marginal = ((v-Tensor(stack_v)).pow(2)).mean()
+                self.marginal_loss = loss_marginal.cpu().detach().numpy().tolist()
+                self.marginal_optimizer.zero_grad()
+                loss_marginal.backward(retain_graph=True)
+                self.marginal_optimizer.step()
+
+                # Marginal value average
+                avg_marginal = Tensor(stack_v).mean().cpu().detach().numpy().tolist()
+                self.marginal_value_avg -= self.marginal_learning_rate * (self.marginal_value_avg - avg_marginal)
+
+            print('Optimizing margin nn : {}/{}'.format(j+1, self.num_epochs), end='\r')
+        print('')
+
     def OptimizeModel(self):
         self.ComputeTDandGAE()
         self.OptimizeSimulationNN()
         if self.use_muscle:
             self.OptimizeMuscleNN()
+        if self.use_adaptive_sampling:
+            self.OptimizeMarginalNN()
 
-    def Train(self):
+    def Train(self, idx):
+        if self.use_adaptive_sampling and (idx % self.mcmc_period == 0):
+            self.SampleStatesForMarginal()
         self.GenerateTransitions()
         self.OptimizeModel()
-
 
     def Evaluate(self):
         self.num_evaluation = self.num_evaluation + 1
@@ -341,7 +448,10 @@ class PPO(object):
             f.write('# {} === {}h:{}m:{}s ===\n'.format(self.num_evaluation,h,m,s))
             f.write('||Loss Actor               : {:.4f}\n'.format(self.loss_actor))
             f.write('||Loss Critic              : {:.4f}\n'.format(self.loss_critic))
-            f.write('||Loss Muscle              : {:.4f}\n'.format(self.loss_muscle))
+            if self.use_muscle:
+                f.write('||Loss Muscle              : {:.4f}\n'.format(self.loss_muscle))
+            if self.use_adaptive_sampling:
+                f.write('||Loss Marginal            : {:.4f}\n'.format(self.marginal_loss))
             f.write('||Noise                    : {:.3f}\n'.format(self.model.log_std.exp().mean()))
             f.write('||Num Transition So far    : {}\n'.format(self.num_tuple_so_far))
             f.write('||Num Transition           : {}\n'.format(self.num_tuple))
@@ -410,6 +520,6 @@ if __name__=="__main__":
         ppo.SaveModel()
     print('num states: {}, num actions: {}'.format(ppo.env.GetNumState(),ppo.env.GetNumAction()))
     for _i in range(ppo.max_iteration-5):
-        ppo.Train()
+        ppo.Train(_i)
         rewards = ppo.Evaluate()
     # Plot(rewards,'reward',0,False)

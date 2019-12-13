@@ -43,6 +43,12 @@ public:
 	// for push experi
     bool HasCrouchVariation(){return mEnvs[0]->HasCrouchVariation();}
 
+	// for adaptive sampling
+	bool UseAdaptiveSampling();
+	int GetMarginalStateNum(){return mEnvs[0]->GetMarginalStateNum();}
+	np::ndarray SampleMarginalState();
+	void SetMarginalSampled(const np::ndarray &_marginal_samples, const p::list &_marginal_sample_cumulative_prob);
+
 private:
 	std::vector<MASS::Environment*> mEnvs;
 

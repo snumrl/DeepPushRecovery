@@ -23,11 +23,14 @@ LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
 Tensor = FloatTensor
 
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Linear') != -1:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.zero_()
+
+
 class MuscleNN(nn.Module):
     def __init__(self,num_total_muscle_related_dofs,num_dofs,num_muscles):
         super(MuscleNN,self).__init__()
@@ -62,6 +65,7 @@ class MuscleNN(nn.Module):
             self.std_muscle_tau = self.std_muscle_tau.cuda()
             self.cuda()
         self.fc.apply(weights_init)
+
     def forward(self,muscle_tau,tau):
         muscle_tau = muscle_tau/self.std_muscle_tau
 
@@ -83,6 +87,7 @@ class MuscleNN(nn.Module):
     def get_activation(self,muscle_tau,tau):
         act = self.forward(Tensor(muscle_tau.reshape(1,-1)),Tensor(tau.reshape(1,-1)))
         return act.cpu().detach().numpy()
+
 
 class SimulationNN(nn.Module):
     def __init__(self,num_states,num_actions):
@@ -150,3 +155,46 @@ class SimulationNN(nn.Module):
         ts = torch.tensor(s)
         p,_ = self.forward(ts)
         return p.sample().cpu().detach().numpy()
+
+
+class MarginalNN(nn.Module):
+    def __init__(self, num_states):
+        super(MarginalNN, self).__init__()
+
+        num_h1 = 256
+        num_h2 = 256
+
+        self.v_fc1 = nn.Linear(num_states, num_h1)
+        self.v_fc2 = nn.Linear(num_h1, num_h2)
+        self.v_fc3 = nn.Linear(num_h2, 1)
+
+        torch.nn.init.xavier_uniform_(self.v_fc1.weight)
+        torch.nn.init.xavier_uniform_(self.v_fc2.weight)
+        torch.nn.init.xavier_uniform_(self.v_fc3.weight)
+
+        self.v_fc1.bias.data.zero_()
+        self.v_fc2.bias.data.zero_()
+        self.v_fc3.bias.data.zero_()
+
+    def forward(self, x):
+        v_out = F.relu(self.v_fc1(x))
+        v_out = F.relu(self.v_fc2(v_out))
+        v_out = self.v_fc3(v_out)
+
+        return v_out
+
+    def load(self,path):
+        print('load marginal nn {}'.format(path))
+        if torch.cuda.is_available():
+            self.load_state_dict(torch.load(path))
+        else:
+            self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+
+    def save(self,path):
+        print('save marginal nn {}'.format(path))
+        torch.save(self.state_dict(), path)
+
+    def get_value(self, s):
+        ts = torch.tensor(s)
+        v = self.forward(ts)
+        return v.cpu().detach().numpy()
