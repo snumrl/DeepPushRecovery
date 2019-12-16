@@ -393,6 +393,7 @@ if __name__ == '__main__':
 
     option = sys.argv[1]
     trial_num = int(sys.argv[2])
+    trial_angle = sys.argv[3]
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/*/'
@@ -409,10 +410,11 @@ if __name__ == '__main__':
         sim = PushSim(meta_file, nn_dir+'/max.pt')
 
     if "all" in option:
-        simulate(sim, 0, trial_num, option)
-        simulate(sim, 1, trial_num, option)
-        simulate(sim, 2, trial_num, option)
-        simulate(sim, 3, trial_num, option)
+        # simulate(sim, 0, trial_num, option)
+        # simulate(sim, 1, trial_num, option)
+        # simulate(sim, 2, trial_num, option)
+        # simulate(sim, 3, trial_num, option)
+        simulate(sim, ['0', '20', '30', '60'].index(trial_angle), trial_num, option)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
         simulate(sim, ['0', '20', '30', '60'].index(crouch), trial_num, option)
