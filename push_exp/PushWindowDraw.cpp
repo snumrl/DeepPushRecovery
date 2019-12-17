@@ -36,6 +36,7 @@ draw()
     DrawPush();
     DrawMuscles(mEnv->GetCharacter()->GetMuscles());
     DrawSkeleton(mEnv->GetCharacter()->GetSkeleton());
+    DrawFootTrajectory();
 
     // Eigen::Quaterniond q = mTrackBall.getCurrQuat();
     // q.x() = 0.0;
@@ -332,6 +333,21 @@ DrawTrajectory()
         glColor3f(0., 1., 0.);
         glBegin(GL_LINE_STRIP);
         for (auto &point : mRootTrajectory)
+            glVertex3f(point[0], point[1], point[2]);
+        glEnd();
+    }
+    glEnable(GL_LIGHTING);
+}
+
+void
+PushWindow::
+DrawFootTrajectory()
+{
+    glDisable(GL_LIGHTING);
+    if (mRootTrajectory.size() > 1){
+        glColor3f(1., 1., 0.);
+        glBegin(GL_LINE_STRIP);
+        for (auto &point : mRightFootTrajectory)
             glVertex3f(point[0], point[1], point[2]);
         glEnd();
     }

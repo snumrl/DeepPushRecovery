@@ -31,6 +31,7 @@ private:
 	void DrawShapeFrame(const dart::dynamics::ShapeFrame* shapeFrame);
 	void DrawShape(const dart::dynamics::Shape* shape,const Eigen::Vector4d& color);
 	void DrawTrajectory();
+	void DrawFootTrajectory();
     void DrawWalkingDir();
     void DrawDetourPerp();
     void DrawPush();
@@ -53,6 +54,7 @@ private:
 
     int mBVHPlaying;
     std::vector<Eigen::Vector3d> mRootTrajectory;
+	std::vector<Eigen::Vector3d> mRightFootTrajectory;
 };
 };
 

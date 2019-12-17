@@ -23,6 +23,7 @@ PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path)
 	mZoom = 0.1;
 	mFocus = false;
 	mRootTrajectory.clear();
+    mRightFootTrajectory.clear();
 }
 
 PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path, const std::string &muscle_nn_path)
@@ -40,6 +41,7 @@ PushWindow::PushWindow(const std::string &meta_file, const std::string &nn_path,
     mZoom = 0.1;
     mFocus = false;
     mRootTrajectory.clear();
+    mRightFootTrajectory.clear();
 }
 
 void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
@@ -48,6 +50,7 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
 	case 's':
 	    this->Step();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
+        mRightFootTrajectory.push_back(GetBodyPosition("TalusR"));
 	    break;
 
 	case 'f':
@@ -65,6 +68,7 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
     case 'S':
         this->StepMotion();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
+        mRightFootTrajectory.push_back(GetBodyPosition("TalusR"));
         break;
 
 	case 'p':
@@ -82,6 +86,7 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
     case 'r':
         this->Reset(false);
         mRootTrajectory.clear();
+        mRightFootTrajectory.clear();
         simulatePrepare();
         std::cout << "Reset!" << std::endl;
         break;
@@ -90,6 +95,7 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
     case 'R':
         this->Reset(false);
         mRootTrajectory.clear();
+        mRightFootTrajectory.clear();
         this->mEnv->PrintWalkingParamsSampled();
         this->SamplePushForce();
         this->PrintPushParamsSampled();
@@ -109,6 +115,7 @@ void PushWindow::displayTimer(int _val) {
 	if(this->valid && mSimulating) {
         PushStep();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
+        mRightFootTrajectory.push_back(GetBodyPosition("TalusR"));
         if(this->GetSimulationTime() >= push_start_time + 10.)
         {
             if(pushed_step == 0) {
