@@ -41,6 +41,7 @@ Environment()
     walk_fsm.reset();
 
     push_enable = false;
+    push_both_dir = false;
     push_step = 8;
     push_duration = .2;
     push_force = 0.;
@@ -85,6 +86,7 @@ Environment(int _index)
     walk_fsm.reset();
 
     push_enable = false;
+    push_both_dir = false;
     push_step = 8;
     push_duration = .2;
     push_force = 0.;
@@ -208,6 +210,11 @@ Initialize(const std::string& meta_file,bool load_obj)
             ss >> muscle_maxforce_ratio;
             for (auto muscle : character->GetMuscles())
                 muscle->f0 *= muscle_maxforce_ratio;
+        }
+        else if(_index == "push_both_direction") {
+            std::string str2;
+            ss >> str2;
+            push_both_dir = (str2 == "true");
         }
     }
     ifs.close();
@@ -384,14 +391,19 @@ Step()
     // if (world_start_time >= 0.5)
     //    steps--;
 
-    if (steps == 8 && !push_ready) {
+    if (steps == push_step && !push_ready) {
         push_ready = true;
         push_start_time = current_time + push_start_timing * half_cycle_duration;
     }
 
     // 2. push
     if (push_enable && current_time >= push_start_time && current_time <= push_start_time + push_duration) {
-        this->GetCharacter()->GetSkeleton()->getBodyNode("ArmL")->addExtForce(-Eigen::Vector3d(push_force, 0., 0.));
+        Eigen::Vector3d push_force_vector;
+        if(push_step % 2 == 0)
+            push_force_vector << -push_force, 0., 0.;
+        else
+            push_force_vector << push_force, 0., 0.;
+        this->GetCharacter()->GetSkeleton()->getBodyNode("ArmL")->addExtForce(push_force_vector);
     }
 
     // 3. for cot
@@ -727,6 +739,17 @@ void Environment::SampleWalkingParamsFromMarginalSampled() {
 
 
 void Environment::SamplePushParams() {
+    if (push_both_dir) {
+        std::uniform_int_distribution<int> uniform(0, 3);
+        int random_number = uniform(generator);
+        if (random_number < 2)
+            push_step = 8;
+        else if (random_number == 2)
+            push_step = 9;
+        else
+            push_step = 7;
+    }
+
     if (push_force_std > DBL_EPSILON) {
         std::normal_distribution<double> gaussian(push_force_mean, push_force_std);
         while((push_force = gaussian(generator)) < 0.);

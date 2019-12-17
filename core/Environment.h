@@ -139,6 +139,7 @@ private:
     WalkFSM walk_fsm;
 
     bool push_enable;
+    bool push_both_dir;
     int push_step;
     double push_duration;
     double push_force;
