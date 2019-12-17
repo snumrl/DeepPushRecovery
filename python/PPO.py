@@ -154,7 +154,7 @@ class PPO(object):
         self.marginal_loss = 0.0
         self.marginal_samples = []
         self.marginal_sample_num = 2000
-        self.marginal_k = 10.
+        self.marginal_k = 5.
         self.mcmc_burn_in = 100
         self.mcmc_period = 20
         if use_cuda:
