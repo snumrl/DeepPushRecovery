@@ -159,7 +159,7 @@ def write_body(q, csvfile):
             step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
             stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y = q.get(False)
                 
-            csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(\
+            csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(\
                         ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
                         start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
                         start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
@@ -167,6 +167,7 @@ def write_body(q, csvfile):
                         stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
             csvfile.flush()
         except:
+            print('write error!')
             break
 
 
