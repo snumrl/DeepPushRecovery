@@ -130,7 +130,7 @@ def worker_simulation(sim, param):
         foot_placement_pos = sim.getFootPlacementPosition()
         foot_diff = foot_placement_pos - stance_foot_pos
         foot_placement_x = -foot_diff[0]
-        foot_placement_y = foot_diff[1]
+        foot_placement_y = foot_diff[2]
     else:
         foot_placement_x = 0.
         foot_placement_y = 0.
