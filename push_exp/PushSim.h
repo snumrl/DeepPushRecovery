@@ -57,6 +57,9 @@ namespace MASS {
         double getTravelDistance();
         double getCostOfTransport();
 
+        np::ndarray getPushedStanceFootPosition();
+        np::ndarray getFootPlacementPosition();
+
         void PrintWalkingParams();
         void PrintWalkingParamsSampled();
         double GetSimulationTime();
@@ -66,7 +69,6 @@ namespace MASS {
         Eigen::Vector3d GetBodyPosition(const std::string &name);
         double GetMotionHalfCycleDuration();
         bool IsValid(){return this->valid;}
-        int StepCount(){return this->walk_fsm.step_count;}
 
 
         // simulation results

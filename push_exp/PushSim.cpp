@@ -417,6 +417,48 @@ void PushSim::_PushStep() {
 
     const double phase = std::fmod(current_time, half_cycle_duration);
     const int steps = (int) (current_time / half_cycle_duration) + 1;
+    const double steps_double = current_time / half_cycle_duration + 1;
+
+    if (steps_double >= 7.3 && info_right_foot_pos_with_toe_off.size() == 0 &&
+        (!IsBodyContact("TalusR") && !IsBodyContact("FootThumbR") && !IsBodyContact("FootPinkyR"))
+            )
+    {
+        info_right_foot_pos_with_toe_off.push_back(this->GetBodyPosition("FootThumbR"));
+        pushed_step_time_toe_off = current_time;
+    }
+    if (steps >= 8 && info_right_foot_pos_with_toe_off.size() == 1 && info_right_foot_pos.size() == 3 &&
+        IsBodyContact("TalusR")
+            )
+    {
+        pushed_next_step_time = current_time;
+        info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
+    }
+    if (steps >= 8 && info_right_foot_pos.size() == 4 && info_right_foot_pos_with_toe_off.size() == 1 &&
+        (!IsBodyContact("TalusR") && !IsBodyContact("FootThumbR") && !IsBodyContact("FootPinkyR"))
+            )
+    {
+        pushed_next_step_time_toe_off = current_time;
+        info_right_foot_pos_with_toe_off.push_back(GetBodyPosition("FootThumbR"));
+    }
+
+    if ( steps_double >= 7.7 && !push_ready &&
+            (IsBodyContact("TalusL") || IsBodyContact("FootThumbL") || IsBodyContact("FootPinkyL"))
+            )
+    {
+        push_ready = true;
+        info_end_time = current_time;
+        pushed_step_time = current_time;
+        info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
+
+        walking_dir = info_root_pos[1] - info_root_pos[0];
+        walking_dir[1] = 0.;
+        walking_dir.normalize();
+
+        push_start_time = current_time + (push_start_timing/100.) * half_cycle_duration;
+        push_mid_time = push_start_time + .5 * push_duration;
+        push_end_time = push_start_time + push_duration;
+        push_force_vec = push_force * Eigen::Vector3d::UnitY().cross(walking_dir);
+    }
 
     if (phase >= 0. && phase - (1./mEnv->GetSimulationHz()) <= 0.) {
         // foot contact
@@ -425,38 +467,11 @@ void PushSim::_PushStep() {
             info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
         }
 
-        if (steps >= 3 && steps <= 9) {
+        if (steps >= 3 && steps <= 8) {
             if(steps %2 == 0)
                 info_left_foot_pos.push_back(GetBodyPosition("TalusL"));
             else
                 info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
-        }
-
-        if (steps == 8 && !push_ready) {
-            push_ready = true;
-            info_end_time = current_time;
-            pushed_step_time = current_time;
-            info_root_pos.push_back(this->GetBodyPosition("Pelvis"));
-
-            walking_dir = info_root_pos[1] - info_root_pos[0];
-            walking_dir[1] = 0.;
-            walking_dir.normalize();
-
-            push_start_time = current_time + (push_start_timing/100.) * half_cycle_duration;
-            push_mid_time = push_start_time + .5 * push_duration;
-            push_end_time = push_start_time + push_duration;
-            push_force_vec = push_force * Eigen::Vector3d::UnitY().cross(walking_dir);
-
-            //TODO:
-            info_right_foot_pos_with_toe_off.push_back(this->GetBodyPosition("FootThumbR"));
-            pushed_step_time_toe_off = current_time;
-        }
-
-        if(steps == 9) {
-            pushed_next_step_time = current_time;
-            //TODO:
-            pushed_next_step_time_toe_off = current_time;
-            info_right_foot_pos_with_toe_off.push_back(this->GetBodyPosition("FootThumbR"));
         }
     }
 
@@ -720,4 +735,37 @@ PushSim::
 GetMotionHalfCycleDuration()
 {
     return mEnv->GetCharacter()->GetBVH()->GetMaxTime()/2.;
+}
+np::ndarray
+PushSim::
+getPushedStanceFootPosition()
+{
+    p::tuple shape = p::make_tuple(3);
+    np::dtype dtype = np::dtype::get_builtin<float>();
+    np::ndarray array = np::empty(shape,dtype);
+
+    float* dest = reinterpret_cast<float*>(array.get_data());
+    for(int i =0;i < 3;i++)
+    {
+        dest[i] = info_left_foot_pos.back()[i];
+    }
+
+    return array;
+}
+
+np::ndarray
+PushSim::
+getFootPlacementPosition()
+{
+    p::tuple shape = p::make_tuple(3);
+    np::dtype dtype = np::dtype::get_builtin<float>();
+    np::ndarray array = np::empty(shape,dtype);
+
+    float* dest = reinterpret_cast<float*>(array.get_data());
+    for(int i =0;i < 3;i++)
+    {
+        dest[i] = info_right_foot_pos.back()[i];
+    }
+
+    return array;
 }

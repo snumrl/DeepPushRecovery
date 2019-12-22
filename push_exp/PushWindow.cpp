@@ -48,9 +48,43 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
 	switch (_key)
 	{
 	case 's':
-	    this->Step();
+        PushStep();
         mRootTrajectory.push_back(GetBodyPosition("Pelvis"));
         mRightFootTrajectory.push_back(GetBodyPosition("TalusR"));
+        if(this->GetSimulationTime() >= push_start_time + 10.)
+        {
+            if(pushed_step == 0) {
+                this->valid = false;
+                this->stopcode = 4;
+            }
+            if(this->valid){
+                std::cout << "PushedLength: " << getPushedLength() << std::endl;
+                std::cout << "PushedStep: " << getPushedStep() << std::endl;
+                std::cout << "StepLength: " << getStepLength() << std::endl;
+                std::cout << "WalkingSpeed: " << getWalkingSpeed() << std::endl;
+                std::cout << "StartTimingTimeIC: " << getStartTimingTimeIC() << std::endl;
+                std::cout << "MidTimingTimeIC: " << getMidTimingTimeIC() << std::endl;
+                std::cout << "StartTimingFootIC: " << getStartTimingFootIC() << std::endl;
+                std::cout << "MidTimingFootIC: " << getMidTimingFootIC() << std::endl;
+                std::cout << "StartTimingTimeFL: " << getStartTimingTimeFL() << std::endl;
+                std::cout << "MidTimingTimeFL: " << getMidTimingTimeFL() << std::endl;
+                std::cout << "StartTimingFootFL: " << getStartTimingFootFL() << std::endl;
+                std::cout << "MidTimingFootFL: " << getMidTimingFootFL() << std::endl;
+                std::cout << "MechanicalWork: " << getMechanicalWork() << std::endl;
+                std::cout << "TravelDistance: " << getTravelDistance() << std::endl;
+                std::cout << "CostOfTransport: " << getCostOfTransport() << std::endl;
+            }
+            std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
+
+        }
+        if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
+            this->valid = false;
+            if (this->pushed_start)
+                this->stopcode = 2; // falling down after push
+            else
+                this->stopcode = 1; // falling down before push
+            std::cout << "end!" << this->stopcode << " " << this->walk_fsm.step_count << " steps"<< std::endl;
+        }
 	    break;
 
 	case 'f':
@@ -89,10 +123,10 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
         mRightFootTrajectory.clear();
         simulatePrepare();
         std::cout << "Reset!" << std::endl;
+        std::cout << std::endl;
         break;
 
     case ' ':
-    case 'R':
         this->Reset(false);
         mRootTrajectory.clear();
         mRightFootTrajectory.clear();
@@ -102,6 +136,16 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
         simulatePrepare();
         std::cout << "Reset!" << std::endl;
         mSimulating = true;
+        break;
+    case 'R':
+        this->Reset(false);
+        mRootTrajectory.clear();
+        mRightFootTrajectory.clear();
+        this->mEnv->PrintWalkingParamsSampled();
+        this->SamplePushForce();
+        this->PrintPushParamsSampled();
+        simulatePrepare();
+        std::cout << "Reset!" << std::endl;
         break;
 
 	case 27 : exit(0);break;
