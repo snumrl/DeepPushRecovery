@@ -124,6 +124,16 @@ def worker_simulation(sim, param):
         mid_timing_time_fl = 0.
         start_timing_foot_fl = 0.
         mid_timing_foot_fl = 0.
+        
+    if stopcode == 0 or stopcode == 2 or stopcode == 3:
+        stance_foot_pos = sim.getPushedStanceFootPosition()
+        foot_placement_pos = sim.getFootPlacementPosition()
+        foot_diff = foot_placement_pos - stance_foot_pos
+        foot_placement_x = -foot_diff[0]
+        foot_placement_y = foot_diff[1]
+    else:
+        foot_placement_x = 0.
+        foot_placement_y = 0.
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
 
@@ -131,12 +141,12 @@ def worker_simulation(sim, param):
            start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
            start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
            step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
-           stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
+           stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
 
 
 def write_start(csvfilepath):
     csvfile = open(csvfilepath, 'w')
-    csvfile.write('ith,weight,height,distance,speed,force,stride,duration,crouch_angle,crouch_label,start_timing_time_ic,mid_timing_time_ic,start_timing_foot_ic,mid_timing_foot_ic,start_timing_time_fl,mid_timing_time_fl,start_timing_foot_fl,mid_timing_foot_fl,step_length,walking_speed,halfcycle_duration,push_strength,push_start_timing,pushed_length,pushed_steps,sim.stopcode,sim.step_length_ratio,sim.halfcycle_duration_ratio,sim.push_step,sim.push_duration,sim.push_force\n')
+    csvfile.write('ith,weight,height,distance,speed,force,stride,duration,crouch_angle,crouch_label,start_timing_time_ic,mid_timing_time_ic,start_timing_foot_ic,mid_timing_foot_ic,start_timing_time_fl,mid_timing_time_fl,start_timing_foot_fl,mid_timing_foot_fl,step_length,walking_speed,halfcycle_duration,push_strength,push_start_timing,pushed_length,pushed_steps,sim.stopcode,sim.step_length_ratio,sim.halfcycle_duration_ratio,sim.push_step,sim.push_duration,sim.push_force,foot_placement_x,foot_placement_y\n')
     return csvfile
 
 
@@ -147,14 +157,14 @@ def write_body(q, csvfile):
             start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
             start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
             step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
-            stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force = q.get(False)
+            stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y = q.get(False)
                 
             csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(\
                         ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
                         start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
                         start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
                         step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
-                        stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force))
+                        stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
             csvfile.flush()
         except:
             break
