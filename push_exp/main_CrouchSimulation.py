@@ -359,6 +359,7 @@ def simulate(sim, launch_order, num, option_str=''):
         for j in range(len(paramgroups[i])):
             worker_simulation(sim, paramgroups[i][j])
         write_body(q, csvfile)
+        print(i, gettimestringisoformat())
     write_end(csvfile)
 
     print()
