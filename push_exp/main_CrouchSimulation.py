@@ -370,6 +370,7 @@ def simulate(sim, launch_order, num, option_str=''):
     print('elapsed time = %d h:%d m:%d s' % (int(_h), int(_m), int(_s)))
     print()
     print('end logging at', gettimestringisoformat())
+    os.system('curl -k -d "chat_id=152782114" --data-urlencode "text='+option_str+additional_str+'" https://api.telegram.org/bot148941471:AAFl8a3r_aWiYyj5t6j5T-Ns1S0H_O1rnJw/sendMessage')
 
 
 if __name__ == '__main__':
