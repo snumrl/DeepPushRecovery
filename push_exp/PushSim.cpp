@@ -518,6 +518,15 @@ simulate(){
     while (this->valid) {
         PushStep();
 
+        Eigen::VectorXd p = mEnv->GetCharacter()->GetSkeleton()->getPositions();
+        Eigen::VectorXd v = mEnv->GetCharacter()->GetSkeleton()->getVelocities();
+
+        if (dart::math::isNan(p) || dart::math::isNan(v))
+        {
+            this->valid = false;
+            this->stopcode = 5;
+        }
+
         if (this->GetSimulationTime() >= this->push_start_time + 10.)
             break;
 

@@ -81,7 +81,15 @@ def worker_simulation(sim, param):
     stopcode = sim.simulate()
     # stopcode = 0
 
-    if stopcode == 1:
+    # stopcode
+    # 0: success
+    # 1: fall down before push
+    # 2: fall down after push
+    # 3: push step > 3
+    # 4: push length is zero
+    # 5: NaN
+
+    if stopcode == 1 or stopcode == 5:
         pushed_length = 0.
         pushed_steps = 0
         push_strength = 0.
@@ -104,7 +112,7 @@ def worker_simulation(sim, param):
     stride = step_length * 1000.
     duration = halfcycle_duration
 
-    if stopcode == 0:
+    if stopcode == 0 or stopcode == 2 or stopcode == 3:
         # start_timing_time_ic = sim.start_timing_time_ic
         # mid_timing_time_ic = sim.mid_timing_time_ic
         start_timing_time_ic = sim.getStartTimingTimeIC()
