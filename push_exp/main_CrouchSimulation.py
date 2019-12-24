@@ -152,9 +152,12 @@ def worker_simulation(sim, param):
            stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
 
 
-def write_start(csvfilepath):
-    csvfile = open(csvfilepath, 'w')
-    csvfile.write('ith,weight,height,distance,speed,force,stride,duration,crouch_angle,crouch_label,start_timing_time_ic,mid_timing_time_ic,start_timing_foot_ic,mid_timing_foot_ic,start_timing_time_fl,mid_timing_time_fl,start_timing_foot_fl,mid_timing_foot_fl,step_length,walking_speed,halfcycle_duration,push_strength,push_start_timing,pushed_length,pushed_steps,sim.stopcode,sim.step_length_ratio,sim.halfcycle_duration_ratio,sim.push_step,sim.push_duration,sim.push_force,foot_placement_x,foot_placement_y\n')
+def write_start(csvfilepath, exist=False):
+    if exist:
+        csvfile = open(csvfilepath, 'a')
+    else:
+        csvfile = open(csvfilepath, 'w')
+        csvfile.write('ith,weight,height,distance,speed,force,stride,duration,crouch_angle,crouch_label,start_timing_time_ic,mid_timing_time_ic,start_timing_foot_ic,mid_timing_foot_ic,start_timing_time_fl,mid_timing_time_fl,start_timing_foot_fl,mid_timing_foot_fl,step_length,walking_speed,halfcycle_duration,push_strength,push_start_timing,pushed_length,pushed_steps,sim.stopcode,sim.step_length_ratio,sim.halfcycle_duration_ratio,sim.push_step,sim.push_duration,sim.push_force,foot_placement_x,foot_placement_y\n')
     return csvfile
 
 
@@ -183,7 +186,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order, num, option_str=''):
+def simulate(sim, launch_order, num=100, option_str=''):
     #=======================================================================
     # settings
     #=======================================================================
@@ -233,7 +236,14 @@ def simulate(sim, launch_order, num, option_str=''):
     if not os.path.exists(outDir):
         os.makedirs(outDir)
 
-    csvfilepath = outDir + option_str + '_' + gettimestringisoformat() + '_' + str(num) + 'trials'+additional_str+ socket.gethostname() + '.csv'
+    csvfilepaths = glob.glob(outDir + option_str + additional_str + '*.csv')
+    exist = False
+    if csvfilepaths:
+        csvfilepath = csvfilepaths[0]
+        exist = True
+    else:
+        csvfilepath = outDir + option_str + additional_str + '_' + gettimestringisoformat() + '.csv'
+
     print('start logging at', gettimestringisoformat())
     print()
 
@@ -362,12 +372,11 @@ def simulate(sim, launch_order, num, option_str=''):
                        weight, height, ith, q))
         ith += 1
 
-    csvfile = write_start(csvfilepath)
+    csvfile = write_start(csvfilepath, exist)
     for i in range(len(paramgroups)):
         for j in range(len(paramgroups[i])):
             worker_simulation(sim, paramgroups[i][j])
         write_body(q, csvfile)
-        print(i, gettimestringisoformat())
     write_end(csvfile)
 
     print()
@@ -379,7 +388,6 @@ def simulate(sim, launch_order, num, option_str=''):
     print('elapsed time = %d h:%d m:%d s' % (int(_h), int(_m), int(_s)))
     print()
     print('end logging at', gettimestringisoformat())
-    os.system('curl -k -d "chat_id=152782114" --data-urlencode "text='+option_str+additional_str+'" https://api.telegram.org/bot148941471:AAFl8a3r_aWiYyj5t6j5T-Ns1S0H_O1rnJw/sendMessage')
 
 
 if __name__ == '__main__':
@@ -412,8 +420,7 @@ if __name__ == '__main__':
     import re
 
     option = sys.argv[1]
-    trial_num = int(sys.argv[2])
-    trial_angle = sys.argv[3]
+    trial_angle = sys.argv[2]
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/*/'
@@ -434,7 +441,7 @@ if __name__ == '__main__':
         # simulate(sim, 1, trial_num, option)
         # simulate(sim, 2, trial_num, option)
         # simulate(sim, 3, trial_num, option)
-        simulate(sim, ['0', '20', '30', '60'].index(trial_angle), trial_num, option)
+        simulate(sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
-        simulate(sim, ['0', '20', '30', '60'].index(crouch), trial_num, option)
+        simulate(sim, ['0', '20', '30', '60'].index(crouch), option_str=option)
