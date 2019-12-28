@@ -44,6 +44,7 @@ public:
     bool HasCrouchVariation(){return mEnvs[0]->HasCrouchVariation();}
 
 	// for adaptive sampling
+	double GetMarginalParameter(){return mEnvs[0]->GetMarginalParameter();}
 	bool UseAdaptiveSampling();
 	int GetMarginalStateNum(){return mEnvs[0]->GetMarginalStateNum();}
 	np::ndarray SampleMarginalState();

@@ -9,3 +9,4 @@ walking_param 60 0.8755451448 0.7435198328 0.02817863267 0.03000639027 0.0519482
 walking_sample adaptive
 push_param 8 0.2 192.6 34.56 0.34 0.21
 push_both_direction true
+marginal_k 1.

@@ -63,6 +63,7 @@ public:
 	void SetActivationLevels(const Eigen::VectorXd& a){mActivationLevels = a;}
 	bool GetUseMuscle(){return mUseMuscle;}
 	bool GetUseAdaptiveSampling(){return sample_param_type==MASS::ADAPTIVE;}
+	double GetMarginalParameter(){return marginal_k;}
 
     // push experiments
     bool HasCrouchVariation(){return crouch_angle_set.size() > 1;}
@@ -132,6 +133,7 @@ private:
     bool walking_param_change;
 
 
+    double marginal_k;
     bool marginal_set;
     std::vector<Eigen::VectorXd> marginal_samples;
     std::vector<double> marginal_cumulative_probs;

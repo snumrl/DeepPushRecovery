@@ -41,6 +41,7 @@ BOOST_PYTHON_MODULE(pymss)
         .def("SetActivationLevels",&EnvManager::SetActivationLevels)
         .def("UseAdaptiveSampling",&EnvManager::UseAdaptiveSampling)
         .def("GetMarginalStateNum",&EnvManager::GetMarginalStateNum)
+        .def("GetMarginalParameter",&EnvManager::GetMarginalParameter)
         .def("SampleMarginalState",&EnvManager::SampleMarginalState)
         .def("SetMarginalSampled",&EnvManager::SetMarginalSampled)
         .def("GetMuscleTuples",&EnvManager::GetMuscleTuples);

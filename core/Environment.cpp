@@ -34,6 +34,7 @@ Environment()
 
     world_start_time = 0.;
 
+    marginal_k = 5.;
     marginal_set = false;
     marginal_samples.clear();
     marginal_cumulative_probs.clear();
@@ -79,6 +80,7 @@ Environment(int _index)
 
     world_start_time = 0.;
 
+    marginal_k = 5.;
     marginal_set = false;
     marginal_samples.clear();
     marginal_cumulative_probs.clear();
@@ -215,6 +217,11 @@ Initialize(const std::string& meta_file,bool load_obj)
             std::string str2;
             ss >> str2;
             push_both_dir = (str2 == "true");
+        }
+        else if(_index == "marginal_k") {
+            double k;
+            ss >> k;
+            marginal_k = k;
         }
     }
     ifs.close();

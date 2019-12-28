@@ -13,11 +13,13 @@ int main(int argc,char** argv)
 	glutInit(&argc, argv);
 
 	MASS::PushWindow* window = nullptr;
-	std::string metadata_name, meta_file_path, nn_dir_path;
+	std::string metadata_name, pt_name, meta_file_path, nn_dir_path;
 	std::cout << "Please provide metadata name: ";
 	std::cin >> metadata_name;
+    std::cout << "Please provide pt file prefix: ";
+    std::cin >> pt_name;
 	meta_file_path = string(MASS_ROOT_DIR)+string("/data/metadata/")+metadata_name+string(".txt");
-	nn_dir_path = string(MASS_ROOT_DIR)+string("/nn/*/")+metadata_name+string("/max*.pt");
+	nn_dir_path = string(MASS_ROOT_DIR)+string("/nn/*/")+metadata_name+string("/")+pt_name+string("*.pt");
 
     // glob struct resides on the stack
     glob_t glob_result;
