@@ -409,10 +409,10 @@ class PPO(object):
                 self.marginal_loss = loss_marginal.cpu().detach().numpy().tolist()
                 self.marginal_optimizer.zero_grad()
                 loss_marginal.backward(retain_graph=True)
-                #TODO:
-                # for param in self.marginal_model.parameters():
-                #     if param.grad is not None:
-                #         param.grad.data.clamp_(-0.5, 0.5)
+
+                for param in self.marginal_model.parameters():
+                    if param.grad is not None:
+                        param.grad.data.clamp_(-0.5, 0.5)
                 self.marginal_optimizer.step()
 
                 # Marginal value average

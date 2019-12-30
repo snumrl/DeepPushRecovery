@@ -5,7 +5,7 @@ skel_file /data/human.xml
 muscle_file /data/muscle284.xml
 bvh_file /data/motion/walk.bvh true
 reward_param 0.75 0.1 0.0 0.15
-walking_param 0 1.12620703 0.9943359644 0.03234099289 0.03779884365 0.06929309644
+walking_param 0 1.22868552 1.15250623 0.0128631447 0.0130122325 0.0242001197 0.983924 1.5582542 0.6973266 1.4576854
 walking_sample adaptive
 push_param 8 0.2 192.6 34.56 0.34 0.21
 push_both_direction true

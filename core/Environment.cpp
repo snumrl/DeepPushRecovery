@@ -32,6 +32,11 @@ Environment()
     sample_param_type = MASS::UNIFORM;
     walking_param_change = false;
 
+    stride_length_min_vec.clear();
+    stride_length_max_vec.clear();
+    walk_speed_min_vec.clear();
+    walk_speed_max_vec.clear();
+
     world_start_time = 0.;
 
     marginal_k = 5.;
@@ -77,6 +82,11 @@ Environment(int _index)
     stride_speed_covar_vec.clear();
     sample_param_type = MASS::UNIFORM;
     walking_param_change = false;
+
+    stride_length_min_vec.clear();
+    stride_length_max_vec.clear();
+    walk_speed_min_vec.clear();
+    walk_speed_max_vec.clear();
 
     world_start_time = 0.;
 
@@ -177,18 +187,39 @@ Initialize(const std::string& meta_file,bool load_obj)
             this->SetRewardParameters(a,b,c,d);
 
         }
+        //else if(_index == "walking_param") {
+        //    std::string str1;
+        //    ss >> str1;
+        //    crouch_angle_set.push_back(atoi(str1.c_str()));
+        //    double a, b, c, d, e;
+        //    ss>>a>>b>>c>>d>>e;
+        //    stride_length_mean_vec.push_back(a);
+        //    walk_speed_mean_vec.push_back(b);
+        //    stride_length_var_vec.push_back(c);
+        //    stride_speed_covar_vec.push_back(d);
+        //    walk_speed_var_vec.push_back(e);
+        //    stride_length_min_vec.push_back(0.);
+        //    stride_length_max_vec.push_back(10.);
+        //    walk_speed_min_vec.push_back(0.);
+        //    walk_speed_max_vec.push_back(10.);
+        //}
         else if(_index == "walking_param") {
             std::string str1;
             ss >> str1;
             crouch_angle_set.push_back(atoi(str1.c_str()));
             double a, b, c, d, e;
-            ss>>a>>b>>c>>d>>e;
+            double stride_length_min, stride_length_max, walk_speed_min, walk_speed_max;
+            ss >> a >> b >> c >> d >> e;
+            ss >> stride_length_min >> stride_length_max >> walk_speed_min >> walk_speed_max;
             stride_length_mean_vec.push_back(a);
             walk_speed_mean_vec.push_back(b);
             stride_length_var_vec.push_back(c);
             stride_speed_covar_vec.push_back(d);
             walk_speed_var_vec.push_back(e);
-
+            stride_length_min_vec.push_back(stride_length_min);
+            stride_length_max_vec.push_back(stride_length_max);
+            walk_speed_min_vec.push_back(walk_speed_min);
+            walk_speed_max_vec.push_back(walk_speed_max);
         }
         else if(_index == "walking_sample") {
             std::string str1;
@@ -635,11 +666,15 @@ SampleWalkingParams()
     }
     crouch_angle = crouch_angle_set[crouch_angle_index];
 
-    double stride_length_mean = stride_length_mean_vec[crouch_angle_index];
-    double stride_length_var = stride_length_var_vec[crouch_angle_index];
-    double walk_speed_mean = walk_speed_mean_vec[crouch_angle_index];
-    double walk_speed_var = walk_speed_var_vec[crouch_angle_index];
-    double stride_speed_covar = stride_speed_covar_vec[crouch_angle_index];
+    const double stride_length_mean = stride_length_mean_vec[crouch_angle_index];
+    const double stride_length_var = stride_length_var_vec[crouch_angle_index];
+    const double walk_speed_mean = walk_speed_mean_vec[crouch_angle_index];
+    const double walk_speed_var = walk_speed_var_vec[crouch_angle_index];
+    const double stride_speed_covar = stride_speed_covar_vec[crouch_angle_index];
+    const double stride_length_min = stride_length_min_vec[crouch_angle_index];
+    const double stride_length_max = stride_length_max_vec[crouch_angle_index];
+    const double walk_speed_min = walk_speed_min_vec[crouch_angle_index];
+    const double walk_speed_max = walk_speed_max_vec[crouch_angle_index];
 
     if (sample_param_type == MASS::NORMAL) {
         // normal sampling
@@ -697,16 +732,18 @@ SampleWalkingParams()
             normalized_val.normalize();
             // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
             std::uniform_real_distribution<double> uniform(-2.4477468307, 2.4477468307);
-            normalized_val *= uniform(generator);
+            do {
+                normalized_val *= uniform(generator);
 
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
-            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+                Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
+                                                * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
 
-            Eigen::Vector2d sample = mean + normTransform * normalized_val;
-            stride_length = sample[0];
-            walk_speed = sample[1];
-
+                Eigen::Vector2d sample = mean + normTransform * normalized_val;
+                stride_length = sample[0];
+                walk_speed = sample[1];
+            } while( stride_length < stride_length_min || stride_length > stride_length_max
+                    || walk_speed < walk_speed_min || walk_speed > walk_speed_max);
         }
         else if (stride_length_var > DBL_EPSILON) {
             std::uniform_real_distribution<double>
@@ -759,7 +796,9 @@ void Environment::SamplePushParams() {
 
     if (push_force_std > DBL_EPSILON) {
         std::normal_distribution<double> gaussian(push_force_mean, push_force_std);
-        while((push_force = gaussian(generator)) < 0.);
+        do{
+            push_force = gaussian(generator);
+        } while(push_force < 0. || push_force > push_force_mean + 2*push_force_std);
         // std::cout << "Sampled push force: " << push_force << std::endl;
     }
 
@@ -774,7 +813,7 @@ void Environment::SamplePushParams() {
 }
 void
 Environment::
-SetMarginalSampled(const std::vector<Eigen::VectorXd> &_marginal_samples, const std::vector<double> &_marginal_cumulative_probs)
+SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs)
 {
     marginal_set = true;
     marginal_samples = _marginal_samples;

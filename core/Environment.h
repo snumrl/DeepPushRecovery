@@ -71,7 +71,7 @@ public:
     void SampleWalkingParamsFromMarginalSampled();
     void SamplePushParams();
 	static int GetMarginalStateNum(){return 4;}
-	void SetMarginalSampled(const std::vector<Eigen::VectorXd> &_marginal_samples, const std::vector<double> &marginal_cumulative_probs);
+	void SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs);
 	std::tuple<int, double, double> GetWalkingParams();
 	std::tuple<double, double, double> GetNormalizedWalkingParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
@@ -129,6 +129,11 @@ private:
     std::vector<double> walk_speed_var_vec;
     std::vector<double> stride_speed_covar_vec;
     int sample_param_type;
+
+    std::vector<double> stride_length_min_vec;
+    std::vector<double> stride_length_max_vec;
+    std::vector<double> walk_speed_min_vec;
+    std::vector<double> walk_speed_max_vec;
 
     bool walking_param_change;
 
