@@ -11,6 +11,8 @@ import glob
 
 from pypushexp import PushSim
 
+import matplotlib.pyplot as plt
+
 #    # input - [recorded item]
 #    [weight] : 48
 #    [height] : 160
@@ -229,6 +231,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         # elif launch_order==2:
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
+    print(mean_crouch)
 
     # =======================================================================
     # set logger
@@ -310,16 +313,32 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     # for i in range(len(mean_crouch)):
     #     mean =          [mean_crouch[i], mean_length_ratio, mean_duration_ratio, mean_force, mean_timing,          mean_crouch[i]]
     #     cov = np.diag(  [std_crouch**2, std_length_ratio**2, std_duration_ratio**2, std_force**2, std_timing**2,   0])
-    for i in range(len(mean_crouch)):
-        mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
-        cov = np.diag([0             , std_length_ratio**2, std_speed_ratio**2, std_force**2, std_timing**2, 0])
-        cov[1, 2] = stride_speed_covars[i] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-        cov[2, 1] = stride_speed_covars[i] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+    if trial_force is not None:
+        for i in range(num):
+            mean = [mean_length_ratio, mean_speed_ratio]
+            cov = np.diag([std_length_ratio**2, std_speed_ratio**2])
+            cov[0, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[1, 0] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
 
-        if len(test_params) == 0:
-            test_params = np.random.multivariate_normal(mean, cov, num)
-        else:
-            test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+            w, v = np.linalg.eigh(cov)
+            normTransform = np.dot(v, np.diag(np.sqrt(w)))
+            normalized_val = np.random.rand(2)
+            normalized_val /= np.linalg.norm(normalized_val)
+            normalized_val = np.multiply(normalized_val, np.random.uniform(-2.4477468307, 2.4477468307, 2))
+            sample = mean + np.dot(normTransform, normalized_val)
+            _sample = np.array([mean_crouch[0], sample[0], sample[1], trial_force, mean_timing, mean_crouch[0]])
+            test_params.append(_sample)
+    else:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , std_length_ratio**2, std_speed_ratio**2, std_force**2, std_timing**2, 0])
+            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
 
     # no negative crouch angle
     for i in range(len(test_params)):
