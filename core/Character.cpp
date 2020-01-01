@@ -4,6 +4,7 @@
 #include "Muscle.h"
 #include <tinyxml.h>
 #include <cstdio>
+#include <sstream>
 
 // for pipe
 #include <sys/stat.h>
@@ -106,7 +107,7 @@ LoadBVH(const std::string& path,bool cyclic)
 }
 void
 Character::
-GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed)
+GenerateBvhForPushExp_old(long crouch_angle, double stride_length, double walk_speed)
 {
     //execute python code
     char fifo_name[256];
@@ -137,6 +138,29 @@ GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed
     }
 
     mBVH->ParseStr(std::string(data));
+}
+void
+Character::
+GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed)
+{
+    //execute python code
+    char fifo_name[256];
+    sprintf(fifo_name,
+            (std::string(MASS_ROOT_DIR)+std::string("/fifo%d")).c_str(),
+            this->index);
+
+    char sh_script[256];
+    sprintf(sh_script,
+            (std::string("python3 ")+std::string(MASS_ROOT_DIR)+std::string("/python/pushrecoverybvhgenerator/bvh_generator_server.py %s %ld %lf %lf")).c_str(),
+            fifo_name, crouch_angle, stride_length, walk_speed);
+    system(sh_script);
+
+    std::ifstream f(fifo_name);
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+
+    mBVH->ParseStr(buffer.str());
+    f.close();
 }
 
 

@@ -249,6 +249,7 @@ class PPO(object):
 
         for i in range(len(marginal_sample_cumulative_prob)):
             marginal_sample_cumulative_prob[i] = marginal_sample_cumulative_prob[i]/marginal_sample_cumulative_prob[-1]
+        print(marginal_samples)
 
         self.env.SetMarginalSampled(np.asarray(marginal_samples), marginal_sample_cumulative_prob)
 

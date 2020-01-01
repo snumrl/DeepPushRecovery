@@ -17,6 +17,7 @@ public:
 	void LoadBVH(const std::string& path,bool cyclic=true);
 
 	void GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed);
+    void GenerateBvhForPushExp_old(long crouch_angle, double stride_length, double walk_speed);
 
 	void Reset();	
 	void SetPDParameters(double kp, double kv);

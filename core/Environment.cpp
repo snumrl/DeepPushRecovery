@@ -815,6 +815,8 @@ void
 Environment::
 SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs)
 {
+    marginal_samples.clear();
+    marginal_cumulative_probs.clear();
     marginal_set = true;
     marginal_samples = _marginal_samples;
     marginal_cumulative_probs = _marginal_cumulative_probs;
