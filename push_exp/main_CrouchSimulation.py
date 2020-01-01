@@ -145,10 +145,10 @@ def worker_simulation(sim, param):
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
 
-    q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
-           start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
-           start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
-           step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
+    q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
+           start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
+           start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl,
+           step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps,
            stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
 
 
@@ -170,11 +170,11 @@ def write_body(q, csvfile):
             step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
             stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y = q.get(False)
                 
-            csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(\
-                        ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label, \
-                        start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic, \
-                        start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl, \
-                        step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps, \
+            csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
+                        ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
+                        start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
+                        start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl,
+                        step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps,
                         stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force, foot_placement_x, foot_placement_y))
             csvfile.flush()
         except:
@@ -186,7 +186,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order, num=100, option_str=''):
+def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     #=======================================================================
     # settings
     #=======================================================================
@@ -218,7 +218,10 @@ def simulate(sim, launch_order, num=100, option_str=''):
         all_mean_crouch = [0, 20, 30, 60]
         
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
-        additional_str = '_%ddeg__push' % mean_crouch[0]
+        if trial_force is not None:
+            additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
+        else:
+            additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
         
         # if launch_order==0:
         #     param_opt_result = '130810_113234_0_60_push'
@@ -256,12 +259,22 @@ def simulate(sim, launch_order, num=100, option_str=''):
     # =======================================================================
     # test2 : multivariate normal distribution
     # =======================================================================
-    stride_means = [1.1262070300, 0.9529737358, 0.9158506655, 0.8755451448]
-    speed_means = [0.9943359644, 0.8080297151, 0.7880050552, 0.7435198328]
 
-    stride_vars = [0.03234099289, 0.02508595114, 0.02772452640, 0.02817863267]
-    stride_speed_covars = [0.03779884365, 0.02225320798, 0.02906793442, 0.03000639027]
-    speed_vars = [0.06929309644, 0.04421889347, 0.04899931048, 0.05194827755]
+    # including intended slow and narrow
+    # stride_means = [1.1262070300, 0.9529737358, 0.9158506655, 0.8755451448]
+    # speed_means = [0.9943359644, 0.8080297151, 0.7880050552, 0.7435198328]
+    #
+    # stride_vars = [0.03234099289, 0.02508595114, 0.02772452640, 0.02817863267]
+    # stride_speed_covars = [0.03779884365, 0.02225320798, 0.02906793442, 0.03000639027]
+    # speed_vars = [0.06929309644, 0.04421889347, 0.04899931048, 0.05194827755]
+
+    # excluding intended slow and narrow
+    stride_means = [1.22868552, 0.9529737358, 0.9158506655, 0.8755451448]
+    speed_means = [1.15250623, 0.8080297151, 0.7880050552, 0.7435198328]
+
+    stride_vars = [0.0128631447, 0.02508595114, 0.02772452640, 0.02817863267]
+    stride_speed_covars = [0.0130122325, 0.02225320798, 0.02906793442, 0.03000639027]
+    speed_vars = [0.0242001197, 0.04421889347, 0.04899931048, 0.05194827755]
 
     # crouch angle
     # mean_crouch = [0,20,30,60]
@@ -312,7 +325,10 @@ def simulate(sim, launch_order, num=100, option_str=''):
     for i in range(len(test_params)):
         test_params[i][0] = abs(test_params[i][0])
         test_params[i][2] = abs(test_params[i][2])
-        test_params[i][3] = -abs(test_params[i][3])
+        if trial_force is not None:
+            test_params[i][3] = -trial_force
+        else:
+            test_params[i][3] = -abs(test_params[i][3])
         
     # print(test_params)
 
@@ -421,6 +437,9 @@ if __name__ == '__main__':
 
     option = sys.argv[1]
     trial_angle = sys.argv[2]
+    _trial_force = None
+    if len(sys.argv) == 4:
+        _trial_force = int(sys.argv[3])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/*/'
@@ -430,18 +449,18 @@ if __name__ == '__main__':
         nn_dir = glob.glob(_nn_finding_dir + option)[0]
     meta_file = _metadata_dir + option + '.txt'
 
-    sim = None
+    _sim = None
     if 'muscle' in option:
-        sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
+        _sim = PushSim(meta_file, nn_dir+'/max.pt', nn_dir+'/max_muscle.pt')
     else:
-        sim = PushSim(meta_file, nn_dir+'/max.pt')
+        _sim = PushSim(meta_file, nn_dir+'/max.pt')
 
     if "all" in option:
         # simulate(sim, 0, trial_num, option)
         # simulate(sim, 1, trial_num, option)
         # simulate(sim, 2, trial_num, option)
         # simulate(sim, 3, trial_num, option)
-        simulate(sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option)
+        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
-        simulate(sim, ['0', '20', '30', '60'].index(crouch), option_str=option)
+        simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, trial_force=_trial_force)
