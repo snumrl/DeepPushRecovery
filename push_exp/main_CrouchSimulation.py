@@ -442,11 +442,14 @@ if __name__ == '__main__':
         _trial_force = int(sys.argv[3])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
-    _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/*/'
+    _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/don2/'
 
-    nn_dir = None
-    if _nn_finding_dir is not None:
-        nn_dir = glob.glob(_nn_finding_dir + option)[0]
+    nn_dirs = glob.glob(_nn_finding_dir + option)
+    if len(nn_dirs) == 0:
+        _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/done/'
+        nn_dirs = glob.glob(_nn_finding_dir + option)
+
+    nn_dir = nn_dirs[0]
     meta_file = _metadata_dir + option + '.txt'
 
     _sim = None
