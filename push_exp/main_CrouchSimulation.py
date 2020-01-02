@@ -345,8 +345,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
             cov = np.diag([0             , 0.               , 0.                , 0.          , std_timing**2, 0])
-            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
 
             if len(test_params) == 0:
                 test_params = np.random.multivariate_normal(mean, cov, num)
@@ -356,8 +354,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
             cov = np.diag([0             , 0.               , 0.                , std_force**2, 0.           , 0])
-            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
 
             if len(test_params) == 0:
                 test_params = np.random.multivariate_normal(mean, cov, num)
@@ -368,8 +364,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
             cov = np.diag([0             , 0.               , 0.                , std_force**2, std_timing**2, 0])
-            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
 
             if len(test_params) == 0:
                 test_params = np.random.multivariate_normal(mean, cov, num)
