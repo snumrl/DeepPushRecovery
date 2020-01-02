@@ -390,11 +390,13 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     for i in range(len(test_params)):
         test_params[i][0] = abs(test_params[i][0])
         test_params[i][2] = abs(test_params[i][2])
-        if trial_force is not None:
-            test_params[i][3] = -trial_force
-        else:
+        if trial_force is None:
             test_params[i][3] = -abs(test_params[i][3])
-        
+        elif trial_force in [-2, -1, 0]:
+            test_params[i][3] = -abs(test_params[i][3])
+        else:
+            test_params[i][3] = -trial_force
+
     # print(test_params)
 
     print()
