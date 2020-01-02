@@ -59,6 +59,7 @@ namespace MASS {
 
         np::ndarray getPushedStanceFootPosition();
         np::ndarray getFootPlacementPosition();
+        np::ndarray getCOMVelocityFootPlacement();
 
         void PrintWalkingParams();
         void PrintWalkingParamsSampled();
@@ -79,6 +80,8 @@ namespace MASS {
         std::vector<Eigen::Vector3d> info_right_foot_pos;
         std::vector<Eigen::Vector3d> info_left_foot_pos_with_toe_off;
         std::vector<Eigen::Vector3d> info_right_foot_pos_with_toe_off;
+
+        std::vector<Eigen::Vector3d> info_com_vel;
 
         double info_start_time_backup;
         Eigen::Vector3d info_root_pos_backup;

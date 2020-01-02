@@ -37,5 +37,6 @@ BOOST_PYTHON_MODULE(pypushexp)
         .def("getCostOfTransport", &PushSim::getCostOfTransport)
         .def("getPushedStanceFootPosition", &PushSim::getPushedStanceFootPosition)
         .def("getFootPlacementPosition", &PushSim::getFootPlacementPosition)
+        .def("getCOMVelocityFootPlacement", &PushSim::getCOMVelocityFootPlacement)
     ;
 }

@@ -247,6 +247,8 @@ simulatePrepare()
     this->info_left_foot_pos_with_toe_off.clear();
     this->info_right_foot_pos_with_toe_off.clear();
 
+    this->info_com_vel.clear();
+
     this->info_start_time_backup = 0.;
     this->info_root_pos_backup.setZero();
 
@@ -432,6 +434,7 @@ void PushSim::_PushStep() {
     {
         pushed_next_step_time = current_time;
         info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
+        this->info_com_vel.push_back(this->mEnv->GetCharacter()->GetSkeleton()->getCOMLinearVelocity());
     }
     if (steps >= 8 && info_right_foot_pos.size() == 4 && info_right_foot_pos_with_toe_off.size() == 1 &&
         (!IsBodyContact("TalusR") && !IsBodyContact("FootThumbR") && !IsBodyContact("FootPinkyR"))
@@ -774,6 +777,23 @@ getFootPlacementPosition()
     for(int i =0;i < 3;i++)
     {
         dest[i] = info_right_foot_pos.back()[i];
+    }
+
+    return array;
+}
+
+np::ndarray
+PushSim::
+getCOMVelocityFootPlacement()
+{
+    p::tuple shape = p::make_tuple(3);
+    np::dtype dtype = np::dtype::get_builtin<float>();
+    np::ndarray array = np::empty(shape,dtype);
+
+    float* dest = reinterpret_cast<float*>(array.get_data());
+    for(int i =0;i < 3;i++)
+    {
+        dest[i] = info_com_vel.back()[i];
     }
 
     return array;
