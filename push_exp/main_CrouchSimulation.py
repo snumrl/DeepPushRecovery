@@ -231,11 +231,17 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         all_mean_crouch = [0, 20, 30, 60]
         
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
-        if trial_force is not None:
-            additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
-        else:
+        if trial_force is None:
             additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
-        
+        elif trial_force == -2:
+            additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
+        elif trial_force == -1:
+            additional_str = '_{deg}deg__push_fix_length_speed_timing'.format(deg=mean_crouch[0])
+        elif trial_force == 0:
+            additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
+        else:
+            additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
+
         # if launch_order==0:
         #     param_opt_result = '130810_113234_0_60_push'
         #     additional_str = '_0_60_push'
@@ -324,7 +330,53 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     # for i in range(len(mean_crouch)):
     #     mean =          [mean_crouch[i], mean_length_ratio, mean_duration_ratio, mean_force, mean_timing,          mean_crouch[i]]
     #     cov = np.diag(  [std_crouch**2, std_length_ratio**2, std_duration_ratio**2, std_force**2, std_timing**2,   0])
-    if trial_force is not None:
+    if trial_force is None:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , std_length_ratio**2, std_speed_ratio**2, std_force**2, std_timing**2, 0])
+            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -2:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , 0.          , std_timing**2, 0])
+            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -1:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , std_force**2, 0.           , 0])
+            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+
+    elif trial_force == 0:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , std_force**2, std_timing**2, 0])
+            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+
+    else:
         for i in range(num):
             mean = [mean_length_ratio, mean_speed_ratio]
             cov = np.diag([std_length_ratio**2, std_speed_ratio**2])
@@ -339,17 +391,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
             sample = mean + np.dot(normTransform, normalized_val)
             _sample = np.array([mean_crouch[0], sample[0], sample[1], trial_force, mean_timing, mean_crouch[0]])
             test_params.append(_sample)
-    else:
-        for i in range(len(mean_crouch)):
-            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
-            cov = np.diag([0             , std_length_ratio**2, std_speed_ratio**2, std_force**2, std_timing**2, 0])
-            cov[1, 2] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-            cov[2, 1] = stride_speed_covars[launch_order] / speed_bvh_after_default_param / motion_stride_bvh_after_default_param
-
-            if len(test_params) == 0:
-                test_params = np.random.multivariate_normal(mean, cov, num)
-            else:
-                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
 
     # no negative crouch angle
     for i in range(len(test_params)):
