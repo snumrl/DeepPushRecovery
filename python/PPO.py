@@ -16,6 +16,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 
+import matplotlib
+import matplotlib.pyplot as plt
+
 import numpy as np
 from pymss import EnvManager
 from IPython import embed
@@ -89,6 +92,7 @@ class MargianlBuffer(object):
 
 class PPO(object):
     def __init__(self, meta_file, num_slaves=16):
+        # plt.ion()
         np.random.seed(seed=int(time.time()))
         self.num_slaves = num_slaves
         self.env = EnvManager(meta_file, self.num_slaves)
@@ -153,10 +157,10 @@ class PPO(object):
         self.marginal_optimizer = optim.SGD(self.marginal_model.parameters(), lr=self.marginal_learning_rate)
         self.marginal_loss = 0.0
         self.marginal_samples = []
-        self.marginal_sample_num = 2000
+        self.marginal_sample_num = 200
         self.marginal_k = self.env.GetMarginalParameter()
-        self.mcmc_burn_in = 100
-        self.mcmc_period = 20
+        self.mcmc_burn_in = 1000
+        self.mcmc_period = 1
         if use_cuda:
             self.marginal_model.cuda()
 
@@ -177,7 +181,7 @@ class PPO(object):
             self.model.save('../nn/'+str(self.num_evaluation//100)+'.pt')
             self.muscle_model.save('../nn/'+str(self.num_evaluation//100)+'_muscle.pt')
 
-    def LoadModel(self,path):
+    def LoadModel(self, path):
         self.model.load('../nn/'+path+'.pt')
         self.muscle_model.load('../nn/'+path+'_muscle.pt')
 
@@ -215,7 +219,7 @@ class PPO(object):
 
         self.num_episode = len(self.total_episodes)
         self.num_tuple = len(self.replay_buffer.buffer)
-        print('SIM : {}'.format(self.num_tuple))
+        # print('SIM : {}'.format(self.num_tuple))
         self.num_tuple_so_far += self.num_tuple
 
         muscle_tuples = self.env.GetMuscleTuples()
@@ -224,32 +228,66 @@ class PPO(object):
 
     def SampleStatesForMarginal(self):
         # MCMC : Metropolitan-Hastings
-        marginal_samples = []
+        _marginal_samples = []
+        marginal_sample_prob = []
         marginal_sample_cumulative_prob = []
         p_sb = 0.
         mcmc_idx = 0
-        while len(marginal_samples) < self.marginal_sample_num:
+        while len(_marginal_samples) < self.marginal_sample_num:
             # Generation
             state_sb_prime = self.env.SampleMarginalState()
             
             # Evaluation
             marginal_value = self.marginal_model(Tensor(state_sb_prime)).cpu().detach().numpy().reshape(-1)
+            # print(marginal_value, state_sb_prime)
             p_sb_prime = math.exp(self.marginal_k * (1. - marginal_value/self.marginal_value_avg) )
 
             # Rejection
             if p_sb_prime > np.random.rand() * p_sb:
                 if mcmc_idx > self.mcmc_burn_in:
-                    marginal_samples.append(state_sb_prime)
-                    if len(marginal_sample_cumulative_prob) > 0:
-                        marginal_sample_cumulative_prob.append(p_sb_prime + marginal_sample_cumulative_prob[-1])
-                    else:
-                        marginal_sample_cumulative_prob.append(p_sb_prime)
+                    _marginal_samples.append(state_sb_prime)
+                    marginal_sample_prob.append(p_sb_prime)
                 p_sb = p_sb_prime
                 mcmc_idx += 1
 
+        sorted_y_idx_list = sorted(range(len(marginal_sample_prob)), key=lambda x: marginal_sample_prob[x])
+        marginal_samples = [_marginal_samples[i] for i in sorted_y_idx_list]
+        marginal_sample_prob.sort()
+
+        marginal_sample_cumulative_prob.append(marginal_sample_prob[0])
+
+        for i in range(1, len(marginal_sample_prob)):
+            marginal_sample_cumulative_prob.append(marginal_sample_prob[i] + marginal_sample_cumulative_prob[-1])
+
         for i in range(len(marginal_sample_cumulative_prob)):
             marginal_sample_cumulative_prob[i] = marginal_sample_cumulative_prob[i]/marginal_sample_cumulative_prob[-1]
-        print(marginal_samples)
+
+        # print(self.marginal_value_avg, sum(marginal_sample_cumulative_prob))
+        # plt.figure(0)
+        # plt.clf()
+        # stride_idx = len(marginal_samples[0])-2
+        # speed_idx = len(marginal_samples[0])-1
+        # xx = []
+        # yy = []
+        #
+        # for marginal_sample in marginal_samples:
+        #     marginal_sample_exact = marginal_sample.copy()
+        #     marginal_sample_exact[stride_idx] *= math.sqrt(0.00323409929)
+        #     marginal_sample_exact[speed_idx] *= math.sqrt(0.00692930964)
+        #     marginal_sample_exact[stride_idx] += 1.12620703
+        #     marginal_sample_exact[speed_idx] += 0.994335964
+        #
+        #     xx.append(marginal_sample_exact[stride_idx])
+        #     yy.append(marginal_sample_exact[speed_idx])
+        #
+        # plt.scatter(xx, yy)
+        #
+        # # plt.xlim(left=-3., right=3.)
+        # # plt.ylim(bottom=-3., top=3.)
+        # plt.xlim(left=0., right=2.)
+        # plt.ylim(bottom=0., top=2.)
+        # plt.show()
+        # plt.pause(0.001)
 
         self.env.SetMarginalSampled(np.asarray(marginal_samples), marginal_sample_cumulative_prob)
 
@@ -265,8 +303,8 @@ class PPO(object):
         counter = 0
         while True:
             counter += 1
-            if counter % 10 == 0:
-                print('SIM : {}'.format(local_step),end='\r')
+            # if counter % 10 == 0:
+            #     print('SIM : {}'.format(local_step),end='\r')
             a_dist,v = self.model(Tensor(states))
             actions = a_dist.sample().cpu().detach().numpy()
             # actions = a_dist.loc.cpu().detach().numpy()
@@ -349,8 +387,8 @@ class PPO(object):
                     if param.grad is not None:
                         param.grad.data.clamp_(-0.5,0.5)
                 self.optimizer.step()
-            print('Optimizing sim nn : {}/{}'.format(j+1,self.num_epochs),end='\r')
-        print('')
+            # print('Optimizing sim nn : {}/{}'.format(j+1,self.num_epochs),end='\r')
+        # print('')
 
     def OptimizeMuscleNN(self):
         muscle_transitions = np.array(self.muscle_buffer.buffer)
@@ -388,9 +426,9 @@ class PPO(object):
                         param.grad.data.clamp_(-0.5,0.5)
                 self.optimizer_muscle.step()
 
-            print('Optimizing muscle nn : {}/{}'.format(j+1,self.num_epochs_muscle),end='\r')
+            # print('Optimizing muscle nn : {}/{}'.format(j+1,self.num_epochs_muscle),end='\r')
         self.loss_muscle = loss.cpu().detach().numpy().tolist()
-        print('')
+        # print('')
 
     def OptimizeMarginalNN(self):
         marginal_transitions = np.array(self.marginal_buffer.buffer)
@@ -420,8 +458,8 @@ class PPO(object):
                 avg_marginal = Tensor(stack_v).mean().cpu().detach().numpy().tolist()
                 self.marginal_value_avg -= self.marginal_learning_rate * (self.marginal_value_avg - avg_marginal)
 
-            print('Optimizing margin nn : {}/{}'.format(j+1, self.num_epochs), end='\r')
-        print('')
+            # print('Optimizing margin nn : {}/{}'.format(j+1, self.num_epochs), end='\r')
+        # print('')
 
     def OptimizeModel(self):
         self.ComputeTDandGAE()
@@ -474,8 +512,6 @@ class PPO(object):
 
         return np.array(self.rewards)
 
-import matplotlib
-import matplotlib.pyplot as plt
 
 plt.ion()
 

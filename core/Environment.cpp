@@ -765,20 +765,34 @@ void Environment::SampleWalkingParamsFromMarginalSampled() {
     auto prob_itr = std::lower_bound(marginal_cumulative_probs.begin(), marginal_cumulative_probs.end(), dart::math::random(0., 1.));
     int sample_index = (prob_itr - marginal_cumulative_probs.begin());
     phase = marginal_samples[sample_index][0];
-    double crouch_angle_normalized = marginal_samples[sample_index][1];
-    double stride_length_normalized = marginal_samples[sample_index][2];
-    double walking_speed_normalized = marginal_samples[sample_index][3];
+    if (this->crouch_angle_set.size() > 1) {
+        double crouch_angle_normalized = marginal_samples[sample_index][1];
+        double stride_length_normalized = marginal_samples[sample_index][2];
+        double walking_speed_normalized = marginal_samples[sample_index][3];
 
-    crouch_angle = (int)(btDegrees(asin(crouch_angle_normalized * sqrt(3.) / 2.)) + 0.1);
-    auto crouch_angle_itr = std::find(crouch_angle_set.begin(), crouch_angle_set.end(), crouch_angle);
-    crouch_angle_index = (crouch_angle_itr - crouch_angle_set.begin());
-    stride_length = stride_length_mean_vec[crouch_angle_index] + stride_length_normalized * sqrt(stride_length_var_vec[crouch_angle_index]);
-    walk_speed = walk_speed_mean_vec[crouch_angle_index] + walking_speed_normalized * sqrt(walk_speed_var_vec[crouch_angle_index]);
+        crouch_angle = (int) (btDegrees(asin(crouch_angle_normalized * sqrt(3.) / 2.)) + 0.1);
+        auto crouch_angle_itr = std::find(crouch_angle_set.begin(), crouch_angle_set.end(), crouch_angle);
+        crouch_angle_index = (crouch_angle_itr - crouch_angle_set.begin());
+        stride_length = stride_length_mean_vec[crouch_angle_index] +
+                        stride_length_normalized * sqrt(stride_length_var_vec[crouch_angle_index]);
+        walk_speed = walk_speed_mean_vec[crouch_angle_index] +
+                     walking_speed_normalized * sqrt(walk_speed_var_vec[crouch_angle_index]);
+    }
+    else {
+        double stride_length_normalized = marginal_samples[sample_index][1];
+        double walking_speed_normalized = marginal_samples[sample_index][2];
+
+        stride_length = stride_length_mean_vec[crouch_angle_index] +
+                        stride_length_normalized * sqrt(stride_length_var_vec[crouch_angle_index]);
+        walk_speed = walk_speed_mean_vec[crouch_angle_index] +
+                     walking_speed_normalized * sqrt(walk_speed_var_vec[crouch_angle_index]);
+    }
 
     // __HP_DEBUG__
     // std::cout << "Environment::SampleWalkingParamsFromMarginalSampled " << std::endl;
+    // std::cout << "sample_index: " << sample_index << std::endl;
     // std::cout << phase << " " << crouch_angle << " " << crouch_angle_index << " "
-    //         << stride_length << " " << walk_speed << std::endl;
+    //          << stride_length << " " << walk_speed << std::endl;
 }
 
 
@@ -811,6 +825,18 @@ void Environment::SamplePushParams() {
         // std::cout << "Sampled push timing: " << push_start_timing << std::endl;
     }
 }
+
+int
+Environment::
+GetMarginalStateNum()
+{
+    int marginal_state_num = 3;
+    if (crouch_angle_set.size() > 1) {
+        marginal_state_num++;
+    }
+    return marginal_state_num;
+}
+
 void
 Environment::
 SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs)

@@ -262,10 +262,18 @@ SampleMarginalState()
 	mEnvs[0]->SampleWalkingParams();
 	std::tie(crouch_angle, stride_length, walking_speed) = mEnvs[0]->GetNormalizedWalkingParams();
 
-	Eigen::VectorXd marginal_state(4);
-	marginal_state << dart::math::random(0., 1.), crouch_angle, stride_length, walking_speed;
-	
-	return toNumPyArray(marginal_state);
+	if (mEnvs[0]->GetMarginalStateNum() == 4) {
+        Eigen::VectorXd marginal_state(4);
+        marginal_state << dart::math::random(0., 1.), crouch_angle, stride_length, walking_speed;
+
+        return toNumPyArray(marginal_state);
+    }
+	else {
+        Eigen::VectorXd marginal_state(3);
+        marginal_state << dart::math::random(0., 1.), stride_length, walking_speed;
+
+        return toNumPyArray(marginal_state);
+	}
 }
 
 void

@@ -70,7 +70,7 @@ public:
 	void SampleWalkingParams();
     void SampleWalkingParamsFromMarginalSampled();
     void SamplePushParams();
-	static int GetMarginalStateNum(){return 4;}
+	int GetMarginalStateNum();
 	void SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs);
 	std::tuple<int, double, double> GetWalkingParams();
 	std::tuple<double, double, double> GetNormalizedWalkingParams();
