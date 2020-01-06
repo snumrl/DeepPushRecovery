@@ -141,7 +141,7 @@ GenerateBvhForPushExp_old(long crouch_angle, double stride_length, double walk_s
 }
 void
 Character::
-GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed)
+GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed, double scale)
 {
     //execute python code
     char fifo_name[256];
@@ -151,8 +151,8 @@ GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed
 
     char sh_script[256];
     sprintf(sh_script,
-            (std::string("python3 ")+std::string(MASS_ROOT_DIR)+std::string("/python/pushrecoverybvhgenerator/bvh_generator_server.py %s %ld %lf %lf")).c_str(),
-            fifo_name, crouch_angle, stride_length, walk_speed);
+            (std::string("python3 ")+std::string(MASS_ROOT_DIR)+std::string("/python/pushrecoverybvhgenerator/bvh_generator_server.py %s %ld %lf %lf %lf")).c_str(),
+            fifo_name, crouch_angle, stride_length, walk_speed, scale);
     system(sh_script);
 
     std::ifstream f(fifo_name);

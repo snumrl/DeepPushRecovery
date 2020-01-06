@@ -16,7 +16,7 @@ public:
 	void LoadMuscles(const std::string& path);
 	void LoadBVH(const std::string& path,bool cyclic=true);
 
-	void GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed);
+	void GenerateBvhForPushExp(long crouch_angle, double stride_length, double walk_speed, double scale=1.);
     void GenerateBvhForPushExp_old(long crouch_angle, double stride_length, double walk_speed);
 
 	void Reset();	
