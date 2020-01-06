@@ -157,10 +157,10 @@ class PPO(object):
         self.marginal_optimizer = optim.SGD(self.marginal_model.parameters(), lr=self.marginal_learning_rate)
         self.marginal_loss = 0.0
         self.marginal_samples = []
-        self.marginal_sample_num = 200
+        self.marginal_sample_num = 2000
         self.marginal_k = self.env.GetMarginalParameter()
         self.mcmc_burn_in = 1000
-        self.mcmc_period = 1
+        self.mcmc_period = 20
         if use_cuda:
             self.marginal_model.cuda()
 
