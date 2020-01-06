@@ -440,7 +440,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
 
     q = mp.Manager().Queue()
 
-    groupsize = 100
+    groupsize = 10
     paramgroups = [[] for i in range( len(test_params)//groupsize + 1 )]
     ith = 1
     for i in range(len(test_params)):
