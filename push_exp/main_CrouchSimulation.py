@@ -341,6 +341,36 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
                 test_params = np.random.multivariate_normal(mean, cov, num)
             else:
                 test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -5:
+        mean_force = 0.1388888888888888888889
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , 0.          , std_timing**2, 0])
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -4:
+        mean_force = 0.1388888888888888888889
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , std_force**2, 0.           , 0])
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -3:
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , std_force**2, std_timing**2, 0])
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+
     elif trial_force == -2:
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
