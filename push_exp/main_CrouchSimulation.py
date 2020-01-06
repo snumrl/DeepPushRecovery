@@ -233,6 +233,12 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
         if trial_force is None:
             additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
+        elif trial_force == -5:
+            additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
+        elif trial_force == -4:
+            additional_str = '_{deg}deg__push_fix_length_speed_timing'.format(deg=mean_crouch[0])
+        elif trial_force == -3:
+            additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
         elif trial_force == -2:
             additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
         elif trial_force == -1:
@@ -248,7 +254,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         # elif launch_order==2:
         #     param_opt_result = '130810_161152_0_30_60_push'
         #     additional_str = '_0_30_60_push'
-    print(mean_crouch)
 
     # =======================================================================
     # set logger
@@ -362,6 +367,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
             else:
                 test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
     elif trial_force == -3:
+        mean_force = 0.1388888888888888888889
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
             cov = np.diag([0             , 0.               , 0.                , std_force**2, std_timing**2, 0])
@@ -422,7 +428,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         test_params[i][2] = abs(test_params[i][2])
         if trial_force is None:
             test_params[i][3] = -abs(test_params[i][3])
-        elif trial_force in [-2, -1, 0]:
+        elif trial_force in [-5, -4, -3, -2, -1, 0]:
             test_params[i][3] = -abs(test_params[i][3])
         else:
             test_params[i][3] = -trial_force
