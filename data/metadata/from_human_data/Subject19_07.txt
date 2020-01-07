@@ -1,0 +1,12 @@
+use_muscle false
+con_hz 30
+sim_hz 600
+scale 0.9894117647058823 1.1013888888888888 
+skel_file /data/human.xml
+muscle_file /data/muscle284.xml
+bvh_file /data/motion/walk.bvh true
+reward_param 0.75 0.1 0.0 0.15
+walking_param 0 0.931238 0.83866510.0 0.0 0.0 0.0 2.0 0.0 2.0
+walking_sample uniform
+push_param 8 0.2 192.6 34.56 0.34 0.21
+push_both_direction true
