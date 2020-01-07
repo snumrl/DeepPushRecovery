@@ -238,7 +238,7 @@ Eigen::Matrix3d string_to_matrix3d(const std::string& input){
 }
 dart::dynamics::SkeletonPtr
 MASS::
-BuildFromFile(const std::string& path,bool create_obj)
+BuildFromFile(const std::string& path,bool create_obj, double height_scale, double mass_scale)
 {
 	TiXmlDocument doc;
 	if(!doc.LoadFile(path)){
@@ -266,22 +266,22 @@ BuildFromFile(const std::string& path,bool create_obj)
 		std::string obj_file = "None";
 		if(body->Attribute("obj"))
 			obj_file = body->Attribute("obj");
-		double mass = std::stod(body->Attribute("mass"));
+		double mass = std::stod(body->Attribute("mass")) * mass_scale;
 
 		if(type == "Box")
 		{
-			Eigen::Vector3d size = string_to_vector3d(body->Attribute("size"));
+			Eigen::Vector3d size = string_to_vector3d(body->Attribute("size")) * height_scale;
 			shape = MASS::MakeBoxShape(size);
 		}
 		else if(type=="Sphere")
 		{
-			double radius = std::stod(body->Attribute("radius"));
+			double radius = std::stod(body->Attribute("radius")) * height_scale;
 			shape = MASS::MakeSphereShape(radius);
 		}
 		else if(type=="Capsule")
 		{
-			double radius = std::stod(body->Attribute("radius"));
-			double height = std::stod(body->Attribute("height"));
+			double radius = std::stod(body->Attribute("radius")) * height_scale;
+			double height = std::stod(body->Attribute("height")) * height_scale;
 			shape = MASS::MakeCapsuleShape(radius,height);
 		}
 		bool contact = false;
@@ -296,14 +296,14 @@ BuildFromFile(const std::string& path,bool create_obj)
 
 		dart::dynamics::Inertia inertia = MakeInertia(shape,mass);
 		T_body.linear() = string_to_matrix3d(body->FirstChildElement("Transformation")->Attribute("linear"));
-		T_body.translation() = string_to_vector3d(body->FirstChildElement("Transformation")->Attribute("translation"));
+		T_body.translation() = string_to_vector3d(body->FirstChildElement("Transformation")->Attribute("translation")) * height_scale;
 		T_body = Orthonormalize(T_body);			
 		TiXmlElement* joint = node->FirstChildElement("Joint");
 		type = joint->Attribute("type");
 		Joint::Properties* props;
 		Eigen::Isometry3d T_joint = Eigen::Isometry3d::Identity();
 		T_joint.linear() = string_to_matrix3d(joint->FirstChildElement("Transformation")->Attribute("linear"));
-		T_joint.translation() = string_to_vector3d(joint->FirstChildElement("Transformation")->Attribute("translation"));
+		T_joint.translation() = string_to_vector3d(joint->FirstChildElement("Transformation")->Attribute("translation")) * height_scale;
 		T_joint = Orthonormalize(T_joint);	
 		Eigen::Isometry3d parent_to_joint;
 		if(parent==nullptr)

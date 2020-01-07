@@ -86,6 +86,9 @@ public:
 
 	double GetMechanicalWork(){return this->mechanicalWork;}
 
+	double GetHeightScale(){return height_scale;}
+    double GetMassScale(){return mass_scale;}
+
 private:
 	dart::simulation::WorldPtr mWorld;
 	int mControlHz,mSimulationHz;
@@ -115,6 +118,9 @@ private:
 	std::default_random_engine generator;
 
     int index;
+
+    double height_scale;
+    double mass_scale;
 
     double phase; // for adaptive sampling
     int crouch_angle;

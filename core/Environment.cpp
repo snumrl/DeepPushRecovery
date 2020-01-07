@@ -18,6 +18,10 @@ Environment()
         :mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
     index = 0;
+
+    height_scale = 1.;
+    mass_scale = 1.;
+
     phase = 0.0;
     crouch_angle_index = 0;
     crouch_angle = 0;
@@ -69,6 +73,10 @@ Environment(int _index)
         :mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),mUseMuscle(true),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
 {
     index = _index;
+
+    height_scale = 1.;
+    mass_scale = 1.;
+
     phase = 0.0;
     crouch_angle_index = 0;
     crouch_angle = 0;
@@ -160,11 +168,14 @@ Initialize(const std::string& meta_file,bool load_obj)
             ss>>hz;
             this->SetSimulationHz(hz);
         }
+        else if(!_index.compare("scale")){
+            ss >> height_scale >> mass_scale;
+        }
         else if(!_index.compare("skel_file")){
             std::string str2;
             ss>>str2;
 
-            character->LoadSkeleton(std::string(MASS_ROOT_DIR)+str2,load_obj);
+            character->LoadSkeleton(std::string(MASS_ROOT_DIR)+str2,load_obj, height_scale, mass_scale);
         }
         else if(!_index.compare("muscle_file")){
             std::string str2;
@@ -278,7 +289,7 @@ Initialize(const std::string& meta_file,bool load_obj)
     push_force = push_force_mean;
     push_start_timing = push_start_timing_mean;
 
-    character->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+    character->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed, height_scale);
 
     double kp = 300.0;
     character->SetPDParameters(kp,sqrt(2*kp));
@@ -502,7 +513,7 @@ IsEndOfEpisode()
     Eigen::VectorXd v = mCharacter->GetSkeleton()->getVelocities();
 
     double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
-    if(root_y < 0.9)
+    if(root_y < 0.40042 * height_scale + 0.49958)
         isTerminal =true;
     else if (dart::math::isNan(p) || dart::math::isNan(v))
         isTerminal =true;

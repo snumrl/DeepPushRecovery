@@ -533,7 +533,7 @@ simulate(){
         if (this->GetSimulationTime() >= this->push_start_time + 10.)
             break;
 
-        if (this->GetBodyPosition("Pelvis")[1] < 0.3) {
+        if (this->GetBodyPosition("Pelvis")[1] < 0.3 * mEnv->GetHeightScale()) {
             // std::cout << "fallen at " << this->walk_fsm.step_count << " "<< this->GetSimulationTime() << "s" << std::endl;
             this->valid = false;
             if (this->pushed_start)

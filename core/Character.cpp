@@ -17,6 +17,8 @@ Character()
 	:mSkeleton(nullptr),mBVH(nullptr),mTc(Eigen::Isometry3d::Identity())
 {
     this->index = 0;
+    height_scale = 1.;
+    mass_scale = 1.;
 }
 
 Character::
@@ -24,13 +26,17 @@ Character(int _index)
         :mSkeleton(nullptr),mBVH(nullptr),mTc(Eigen::Isometry3d::Identity())
 {
     this->index = _index;
+    height_scale = 1.;
+    mass_scale = 1.;
 }
 
 void
 Character::
-LoadSkeleton(const std::string& path,bool create_obj)
+LoadSkeleton(const std::string& path, bool create_obj, double _height_scale, double _mass_scale)
 {
-	mSkeleton = BuildFromFile(path,create_obj);
+	mSkeleton = BuildFromFile(path, create_obj, _height_scale, _mass_scale);
+	height_scale = _height_scale;
+	mass_scale = _mass_scale;
 	std::map<std::string,std::string> bvh_map;
 	TiXmlDocument doc;
 	doc.LoadFile(path);
@@ -169,7 +175,10 @@ Character::
 Reset()
 {
 	mTc = mBVH->GetT0();
-	mTc.translation()[1] -= 1.005;
+//	mTc.translation()[1] -= 1.005;
+//	mTc.translation()[1] -= 1.0047 * height_scale + 0.0003;
+//    mTc.translation()[1] += -1.0948 * height_scale - 0.0003 + 0.0901 * height_scale;
+    mTc.translation()[1] += -1.0692 * height_scale - 0.0003 + 0.0645 * height_scale;
     // mTc.translation()[1] = 0.0;
 }
 void

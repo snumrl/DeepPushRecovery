@@ -12,7 +12,7 @@ public:
 	Character();
     Character(int _index);
 
-	void LoadSkeleton(const std::string& path,bool create_obj = false);
+	void LoadSkeleton(const std::string& path, bool create_obj = false, double _height_scale=1., double _mass_scale=1.);
 	void LoadMuscles(const std::string& path);
 	void LoadBVH(const std::string& path,bool cyclic=true);
 
@@ -36,6 +36,8 @@ public:
 	dart::dynamics::SkeletonPtr mSkeleton;
 	BVH* mBVH;
 	Eigen::Isometry3d mTc;
+	double height_scale;
+	double mass_scale;
 
 	std::vector<Muscle*> mMuscles;
 	std::vector<dart::dynamics::BodyNode*> mEndEffectors;

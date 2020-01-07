@@ -49,6 +49,9 @@ int main(int argc,char** argv)
     else if(metadata_name.find(string("torque")) != string::npos) {
         window = new MASS::PushWindow(meta_file_path, filenames[0]);
 	}
+    else if(metadata_name.find(string("Subject")) != string::npos) {
+        window = new MASS::PushWindow(meta_file_path, filenames[0]);
+    }
 
     if (window != nullptr) {
         window->initWindow(1024, 768, "gui");
