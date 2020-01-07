@@ -233,6 +233,8 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
         if trial_force is None:
             additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
+        elif trial_force == -6:
+            additional_str = '_{deg}deg__push_fix_length_speed_zeroforce'.format(deg=mean_crouch[0])
         elif trial_force == -5:
             additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
         elif trial_force == -4:
@@ -346,6 +348,16 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
                 test_params = np.random.multivariate_normal(mean, cov, num)
             else:
                 test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
+    elif trial_force == -6:
+        mean_force = 0
+        for i in range(len(mean_crouch)):
+            mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
+            cov = np.diag([0             , 0.               , 0.                , 0.          , 0            , 0])
+
+            if len(test_params) == 0:
+                test_params = np.random.multivariate_normal(mean, cov, num)
+            else:
+                test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
     elif trial_force == -5:
         mean_force = 75
         for i in range(len(mean_crouch)):
@@ -428,7 +440,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         test_params[i][2] = abs(test_params[i][2])
         if trial_force is None:
             test_params[i][3] = -abs(test_params[i][3])
-        elif trial_force in [-5, -4, -3, -2, -1, 0]:
+        elif trial_force in [-6, -5, -4, -3, -2, -1, 0]:
             test_params[i][3] = -abs(test_params[i][3])
         else:
             test_params[i][3] = -trial_force
