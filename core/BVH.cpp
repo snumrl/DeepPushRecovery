@@ -114,7 +114,10 @@ BVH::
 BVH(const dart::dynamics::SkeletonPtr& skel,const std::map<std::string,std::string>& bvh_map)
 	:mSkeleton(skel),mBVHMap(bvh_map),mCyclic(true)
 {
-
+	mBVHToSkelMap.clear();
+	for(auto &i :bvh_map)
+		mBVHToSkelMap[i.value] = i.key;
+	mNodeNames.clear();
 }
 
 Eigen::VectorXd
@@ -321,6 +324,7 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::i
 
     BVHNode* new_node = new BVHNode(name,parent);
 	mMap.insert(std::make_pair(name,new_node));
+	mNodeNames.push_back(name);
 
     is>>buffer; //{
 
@@ -382,6 +386,7 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::s
 
     BVHNode* new_node = new BVHNode(name,parent);
     mMap.insert(std::make_pair(name,new_node));
+    mNodeNames.push_back(name);
 
     is>>buffer; //{
 

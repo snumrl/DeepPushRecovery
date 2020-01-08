@@ -72,6 +72,7 @@ namespace MASS
         bool mCyclic;
         std::map<std::string,BVHNode*> mMap;
         std::vector<Eigen::VectorXd> mMotions;
+        std::vector<std::string> mNodeNames;
         double mTimeStep;
         int mNumTotalChannels;
         int mNumTotalFrames;
@@ -80,6 +81,7 @@ namespace MASS
 
         dart::dynamics::SkeletonPtr mSkeleton;
         std::map<std::string,std::string> mBVHMap;
+        std::map<std::string,std::string> mBVHToSkelMap;
 
         Eigen::Isometry3d T0,T1;
         BVHNode* ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::ifstream& is);

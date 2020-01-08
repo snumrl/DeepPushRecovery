@@ -71,6 +71,7 @@ namespace MASS {
         double GetMotionHalfCycleDuration();
         bool IsValid(){return this->valid;}
 
+        Eigen::VectorXd getPoseForBvh();
 
         // simulation results
         double info_start_time;
@@ -82,6 +83,8 @@ namespace MASS {
         std::vector<Eigen::Vector3d> info_right_foot_pos_with_toe_off;
 
         std::vector<Eigen::Vector3d> info_com_vel;
+
+        std::vector<Eigen::VectorXd> motion;
 
         double info_start_time_backup;
         Eigen::Vector3d info_root_pos_backup;

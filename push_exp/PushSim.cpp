@@ -170,6 +170,8 @@ PushStep()
     Eigen::Vector3d root_pos = this->GetBodyPosition("Pelvis");
     root_pos[1] = 0.;
     this->travelDistance += (root_pos - last_root_pos).norm();
+
+    this->motion.push_back(this->getPoseForBvh());
 }
 
 void
@@ -248,6 +250,9 @@ simulatePrepare()
     this->info_right_foot_pos_with_toe_off.clear();
 
     this->info_com_vel.clear();
+
+    this->motion.clear();
+    this->motion.push_back(this->getPoseForBvh());
 
     this->info_start_time_backup = 0.;
     this->info_root_pos_backup.setZero();
@@ -517,6 +522,7 @@ int
 PushSim::
 simulate(){
     simulatePrepare();
+
 
     while (this->valid) {
         PushStep();
@@ -797,4 +803,35 @@ getCOMVelocityFootPlacement()
     }
 
     return array;
+}
+
+Eigen::VectorXd
+PushSim::
+getPoseForBvh()
+{
+    auto skeleton = mEnv->GetCharacter()->GetSkeleton();
+    auto &node_names = mEnv->GetCharacter()->GetBVH()->mNodeNames;
+    auto &node_map = mEnv->GetCharacter()->GetBVH()->mBVHToSkelMap;
+    int pose_idx = 0;
+    Eigen::VectorXd pose(3*node_names.size()+3);
+    pose.setZero();
+    for(int i=0; i<node_names.size(); i++)
+    {
+        auto joint = skeleton->getJoint();
+        Eigen::VectorXd joint_position = joint->getPositions();
+        if (i == 0) {
+            pose.head(6) = joint_position;
+            pose_idx += 6;
+        }
+        else {
+            if (joint->getNumDofs() == 1) {
+                pose.segment(pose_idx, 3) = joint_position[0] * joint->getAxis();
+            }
+            else if(joint->getNumDofs() == 3) {
+                pose.segment(pose_idx, 3) = joint_position;    
+            }
+            pose_idx += 3;    
+        }
+    }
+    return pose;
 }
