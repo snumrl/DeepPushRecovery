@@ -116,7 +116,7 @@ BVH(const dart::dynamics::SkeletonPtr& skel,const std::map<std::string,std::stri
 {
 	mBVHToSkelMap.clear();
 	for(auto &i :bvh_map)
-		mBVHToSkelMap[i.value] = i.key;
+		mBVHToSkelMap[i.second] = i.first;
 	mNodeNames.clear();
 }
 

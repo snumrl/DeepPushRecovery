@@ -817,7 +817,7 @@ getPoseForBvh()
     pose.setZero();
     for(int i=0; i<node_names.size(); i++)
     {
-        auto joint = skeleton->getJoint();
+        auto joint = skeleton->getJoint(node_names[i]);
         Eigen::VectorXd joint_position = joint->getPositions();
         if (i == 0) {
             pose.head(6) = joint_position;
@@ -825,7 +825,7 @@ getPoseForBvh()
         }
         else {
             if (joint->getNumDofs() == 1) {
-                pose.segment(pose_idx, 3) = joint_position[0] * joint->getAxis();
+                pose.segment(pose_idx, 3) = joint_position[0] * ((dart::dynamics::RevoluteJoint*)joint)->getAxis();
             }
             else if(joint->getNumDofs() == 3) {
                 pose.segment(pose_idx, 3) = joint_position;    
