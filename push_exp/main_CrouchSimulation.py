@@ -236,11 +236,11 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         elif trial_force == -6:
             additional_str = '_{deg}deg__push_fix_length_speed_zeroforce'.format(deg=mean_crouch[0])
         elif trial_force == -5:
-            additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
+            additional_str = '_{deg}deg__push_fix_length_speed_force_weak'.format(deg=mean_crouch[0])
         elif trial_force == -4:
-            additional_str = '_{deg}deg__push_fix_length_speed_timing'.format(deg=mean_crouch[0])
+            additional_str = '_{deg}deg__push_fix_length_speed_timing_weak'.format(deg=mean_crouch[0])
         elif trial_force == -3:
-            additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
+            additional_str = '_{deg}deg__push_fix_length_speed_weak'.format(deg=mean_crouch[0])
         elif trial_force == -2:
             additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
         elif trial_force == -1:
