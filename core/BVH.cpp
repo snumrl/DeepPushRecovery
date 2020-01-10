@@ -264,6 +264,7 @@ ParseStr(const std::string& str,bool cyclic)
         std::cout<<"Can't Open File"<<std::endl;
         return;
     }
+    mNodeNames.clear();
     while(is>>buffer)
     {
         if(!strcmp(buffer,"HIERARCHY"))
@@ -386,7 +387,8 @@ ReadHierarchy(BVHNode* parent,const std::string& name,int& channel_offset,std::s
 
     BVHNode* new_node = new BVHNode(name,parent);
     mMap.insert(std::make_pair(name,new_node));
-    mNodeNames.push_back(name);
+    if (name != "EndEffector")
+        mNodeNames.push_back(name);
 
     is>>buffer; //{
 

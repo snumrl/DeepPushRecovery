@@ -23,6 +23,26 @@ static np::ndarray toNumPyArray(const Eigen::VectorXd& vec)
 
     return array;
 }
+static np::ndarray toNumPyArray(const std::vector<Eigen::VectorXd>& val)
+{
+    int n =val.size();
+    int m = val[0].rows();
+    p::tuple shape = p::make_tuple(n,m);
+    np::dtype dtype = np::dtype::get_builtin<float>();
+    np::ndarray array = np::empty(shape,dtype);
+
+    float* dest = reinterpret_cast<float*>(array.get_data());
+    int index = 0;
+    for(int i=0;i<n;i++)
+    {
+        for(int j=0;j<m;j++)
+        {
+            dest[index++] = val[i][j];
+        }
+    }
+
+    return array;
+}
 
 static double calculate_distance_to_line(const Eigen::Vector3d &point, const Eigen::Vector3d &line_unit_vec, const Eigen::Vector3d &point_on_line, const Eigen::Vector3d &force_vec) {
     Eigen::Vector3d point_vec = point - point_on_line;
@@ -162,6 +182,12 @@ PushStep()
             _PushStep();
             if(this->push_start_time <= this->GetSimulationTime() && this->GetSimulationTime() <= this->push_end_time) {
                 this->AddBodyExtForce("ArmL", this->push_force_vec);
+                if (push_start_frame == 10000)
+                    push_start_frame = this->motion.size();
+            }
+            else{
+                if (push_start_frame != 10000 && push_end_frame == -1)
+                    push_end_frame = this->motion.size();
             }
             mEnv->Step();
         }
@@ -263,6 +289,8 @@ simulatePrepare()
     this->pushed_step_time_toe_off = 0.;
     this->pushed_next_step_time_toe_off = 0.;
 
+    this->push_start_frame = 10000;
+    this->push_end_frame = -1;
     this->push_start_time = 30.;
     this->push_mid_time = 30.;
     this->push_end_time = 30.;
@@ -815,23 +843,43 @@ getPoseForBvh()
     int pose_idx = 0;
     Eigen::VectorXd pose(3*node_names.size()+3);
     pose.setZero();
+//    std::cout << node_names.size() << " " << node_map.size() << std::endl;
+//    for(int i=0; i<node_names.size(); i++)
+//    {
+//        std::cout << node_names[i] <<std::endl;
+//    }
     for(int i=0; i<node_names.size(); i++)
     {
-        auto joint = skeleton->getJoint(node_names[i]);
-        Eigen::VectorXd joint_position = joint->getPositions();
-        if (i == 0) {
-            pose.head(6) = joint_position;
-            pose_idx += 6;
+//        std::cout << i << " " << node_names[i] << std::endl;
+        if (node_map.find(node_names[i]) == node_map.end())
+        {
+            pose_idx += 3;
         }
         else {
-            if (joint->getNumDofs() == 1) {
-                pose.segment(pose_idx, 3) = joint_position[0] * ((dart::dynamics::RevoluteJoint*)joint)->getAxis();
+            auto joint = skeleton->getJoint(node_map[node_names[i]]);
+//            std::cout << joint->getName() << std::endl;
+            Eigen::VectorXd joint_position = joint->getPositions();
+//            std::cout << joint_position << std::endl;
+            if (i == 0) {
+                pose.head(3) = Eigen::Vector3d(0., 98.09, -3.08) + joint_position.segment(3, 3) * 100. / mEnv->GetHeightScale();
+                pose.segment(3, 3) = joint_position.head(3);
+                pose_idx += 6;
+            } else {
+                if (joint->getNumDofs() == 1) {
+                    pose.segment(pose_idx, 3) = joint_position[0] * ((dart::dynamics::RevoluteJoint *) joint)->getAxis();
+                } else if (joint->getNumDofs() == 3) {
+                    pose.segment(pose_idx, 3) = joint_position;
+                }
+                pose_idx += 3;
             }
-            else if(joint->getNumDofs() == 3) {
-                pose.segment(pose_idx, 3) = joint_position;    
-            }
-            pose_idx += 3;    
         }
     }
     return pose;
+}
+
+np::ndarray
+PushSim::
+getMotions()
+{
+    return toNumPyArray(this->motion);
 }

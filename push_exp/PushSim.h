@@ -72,6 +72,9 @@ namespace MASS {
         bool IsValid(){return this->valid;}
 
         Eigen::VectorXd getPoseForBvh();
+        np::ndarray getMotions();
+        int getPushStartFrame(){return push_start_frame;}
+        int getPushEndFrame(){return push_end_frame;}
 
         // simulation results
         double info_start_time;
@@ -95,6 +98,8 @@ namespace MASS {
         double pushed_step_time_toe_off;
         double pushed_next_step_time_toe_off;
 
+        int push_start_frame;
+        int push_end_frame;
         double push_start_time;
         double push_mid_time;
         double push_end_time;

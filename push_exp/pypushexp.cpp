@@ -38,5 +38,8 @@ BOOST_PYTHON_MODULE(pypushexp)
         .def("getPushedStanceFootPosition", &PushSim::getPushedStanceFootPosition)
         .def("getFootPlacementPosition", &PushSim::getFootPlacementPosition)
         .def("getCOMVelocityFootPlacement", &PushSim::getCOMVelocityFootPlacement)
+        .def("getMotions", &PushSim::getMotions)
+        .def("getPushStartFrame", &PushSim::getPushStartFrame)
+        .def("getPushEndFrame", &PushSim::getPushEndFrame)
     ;
 }
