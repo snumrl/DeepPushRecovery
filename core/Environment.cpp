@@ -707,8 +707,13 @@ SampleWalkingParams()
             // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
 
             Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+            Eigen::Vector2d eigenvalues = eigenSolver.eigenvalues();
+                if (-0.000001 < eigenvalues[0] && eigenvalues[0] < 0.)
+                    eigenvalues[0] = 0.;
+                if (-0.000001 < eigenvalues[1] && eigenvalues[1] < 0.)
+                    eigenvalues[1] = 0.;
             Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                            * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+                                            * eigenvalues.cwiseSqrt().asDiagonal();
 
             Eigen::Vector2d sample = mean + normTransform * normalized_val;
             stride_length = sample[0];
@@ -747,8 +752,13 @@ SampleWalkingParams()
                 normalized_val *= uniform(generator);
 
                 Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+                Eigen::Vector2d eigenvalues = eigenSolver.eigenvalues();
+                if (-0.000001 < eigenvalues[0] && eigenvalues[0] < 0.)
+                    eigenvalues[0] = 0.;
+                if (-0.000001 < eigenvalues[1] && eigenvalues[1] < 0.)
+                    eigenvalues[1] = 0.;
                 Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                                * eigenSolver.eigenvalues().cwiseSqrt().asDiagonal();
+                                                * eigenvalues.cwiseSqrt().asDiagonal();
 
                 Eigen::Vector2d sample = mean + normTransform * normalized_val;
                 stride_length = sample[0];
