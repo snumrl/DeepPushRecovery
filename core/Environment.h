@@ -143,6 +143,8 @@ private:
 
     bool walking_param_change;
 
+    std::vector<Eigen::Matrix2d> normTransforms;
+
 
     double marginal_k;
     bool marginal_set;

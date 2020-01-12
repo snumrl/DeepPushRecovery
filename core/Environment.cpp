@@ -231,6 +231,24 @@ Initialize(const std::string& meta_file,bool load_obj)
             stride_length_max_vec.push_back(stride_length_max);
             walk_speed_min_vec.push_back(walk_speed_min);
             walk_speed_max_vec.push_back(walk_speed_max);
+
+            if (c > DBL_EPSILON && e > DBL_EPSILON) {
+                Eigen::Matrix2d covar;
+                covar << c, d, d, e;
+
+                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
+                Eigen::Vector2d eigenvalues = eigenSolver.eigenvalues();
+                if (-0.000001 < eigenvalues[0] && eigenvalues[0] < 0.)
+                    eigenvalues[0] = 0.;
+                if (-0.000001 < eigenvalues[1] && eigenvalues[1] < 0.)
+                    eigenvalues[1] = 0.;
+                Eigen::Matrix2d normTransform = eigenSolver.eigenvectors() * eigenvalues.cwiseSqrt().asDiagonal();
+                normTransforms.push_back(normTransform);
+            }
+            else{
+                normTransforms.push_back(Eigen::Matrix2d::Zero());
+            }
+
         }
         else if(_index == "walking_sample") {
             std::string str1;
@@ -686,6 +704,7 @@ SampleWalkingParams()
     const double stride_length_max = stride_length_max_vec[crouch_angle_index];
     const double walk_speed_min = walk_speed_min_vec[crouch_angle_index];
     const double walk_speed_max = walk_speed_max_vec[crouch_angle_index];
+    Eigen::Matrix2d &normTransform = normTransforms[crouch_angle_index];
 
     if (sample_param_type == MASS::NORMAL) {
         // normal sampling
@@ -693,9 +712,7 @@ SampleWalkingParams()
             // using multivariate gaussian
             Eigen::Vector2d mean;
             mean << stride_length_mean, walk_speed_mean;
-            Eigen::Matrix2d covar;
-            covar << stride_length_var, stride_speed_covar, stride_speed_covar, walk_speed_var;
-
+ 
             Eigen::Vector2d normalized_val;
             normalized_val.setRandom();
             normalized_val.normalize();
@@ -705,15 +722,6 @@ SampleWalkingParams()
             }
             while (normalized_val.norm() > 2.4477468307);
             // Mahalanobis distance r < sqrt(-2*ln(1-p)) -> p = 0.95
-
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
-            Eigen::Vector2d eigenvalues = eigenSolver.eigenvalues();
-                if (-0.000001 < eigenvalues[0] && eigenvalues[0] < 0.)
-                    eigenvalues[0] = 0.;
-                if (-0.000001 < eigenvalues[1] && eigenvalues[1] < 0.)
-                    eigenvalues[1] = 0.;
-            Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                            * eigenvalues.cwiseSqrt().asDiagonal();
 
             Eigen::Vector2d sample = mean + normTransform * normalized_val;
             stride_length = sample[0];
@@ -740,8 +748,6 @@ SampleWalkingParams()
             // using multivariate gaussian
             Eigen::Vector2d mean;
             mean << stride_length_mean, walk_speed_mean;
-            Eigen::Matrix2d covar;
-            covar << stride_length_var, stride_speed_covar, stride_speed_covar, walk_speed_var;
 
             Eigen::Vector2d normalized_val;
             normalized_val.setRandom();
@@ -750,15 +756,6 @@ SampleWalkingParams()
             std::uniform_real_distribution<double> uniform(-2.4477468307, 2.4477468307);
             do {
                 normalized_val *= uniform(generator);
-
-                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(covar);
-                Eigen::Vector2d eigenvalues = eigenSolver.eigenvalues();
-                if (-0.000001 < eigenvalues[0] && eigenvalues[0] < 0.)
-                    eigenvalues[0] = 0.;
-                if (-0.000001 < eigenvalues[1] && eigenvalues[1] < 0.)
-                    eigenvalues[1] = 0.;
-                Eigen::Matrix2d normTransform = eigenSolver.eigenvectors()
-                                                * eigenvalues.cwiseSqrt().asDiagonal();
 
                 Eigen::Vector2d sample = mean + normTransform * normalized_val;
                 stride_length = sample[0];
