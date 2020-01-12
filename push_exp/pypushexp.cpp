@@ -16,6 +16,7 @@ BOOST_PYTHON_MODULE(pypushexp)
 
     class_<PushSim>("PushSim",init<std::string, std::string>())
         .def(init<std::string, std::string, std::string>())
+        .def("simulate_motion", &PushSim::simulate_motion)
         .def("simulate", &PushSim::simulate)
         .def("setParamedStepParams", &PushSim::setParamedStepParams)
         .def("setPushParams", &PushSim::setPushParams)

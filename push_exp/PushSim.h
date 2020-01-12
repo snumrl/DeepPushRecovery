@@ -36,6 +36,8 @@ namespace MASS {
         bool mNNLoaded;
         bool mMuscleNNLoaded;
 
+        void simulate_motion();
+
         int simulate();
         void simulatePrepare();
         void setParamedStepParams(int crouch_angle, double step_length_ratio, double walk_speed_ratio);

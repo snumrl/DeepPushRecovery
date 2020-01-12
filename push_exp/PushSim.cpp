@@ -546,6 +546,22 @@ void PushSim::_PushStep() {
     }
 }
 
+void
+PushSim::
+simulate_motion() {
+    simulatePrepare();
+    double t = mEnv->GetWorld()->getTime();
+    double dt = 1./mEnv->GetControlHz();
+    while (t < 10.) {
+        Eigen::VectorXd p = mEnv->GetCharacter()->GetTargetPositions(t, 1./mEnv->GetControlHz());
+        mEnv->GetCharacter()->GetSkeleton()->setPositions(p);
+        mEnv->GetCharacter()->GetSkeleton()->computeForwardKinematics(true, false, false);
+        mEnv->GetWorld()->setTime(t + dt);
+        t = mEnv->GetWorld()->getTime();
+        this->motion.push_back(this->getPoseForBvh());
+    }
+}
+
 int
 PushSim::
 simulate(){
