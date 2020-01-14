@@ -233,7 +233,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None, std_ra
 
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
         if trial_force is None:
-            additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
+            additional_str = '_{deg}deg__push_{std:.1f}'.format(deg=mean_crouch[0], std=std_ratio)
         else:
             additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
 
