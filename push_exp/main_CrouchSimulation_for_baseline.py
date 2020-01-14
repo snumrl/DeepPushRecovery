@@ -200,7 +200,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
+def simulate(sim, launch_order, num=100, option_str='', trial_force=None, std_ratio=0.):
     #=======================================================================
     # settings
     #=======================================================================
@@ -273,11 +273,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     # =======================================================================
     # test2 : multivariate normal distribution
     # =======================================================================
-
-    std_ratio = re.findall(r'_-?\d\dstd', option_str)[0][1:-3]
-    print(std_ratio)
-    std_ratio = float(std_ratio) / 10.
-    print(std_ratio)
 
     # including intended slow and narrow
     stride_means = [1.1262070300, 0.9529737358, 0.9158506655, 0.8755451448]
@@ -474,6 +469,7 @@ if __name__ == '__main__':
     import sys
 
     option = sys.argv[1]
+    _std_ratio = float(sys.argv[2])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/base/'
@@ -484,4 +480,4 @@ if __name__ == '__main__':
 
     _sim = PushSim(meta_file, nn_dir+'/max.pt')
     crouch = re.findall(r'crouch\d+', option)[0][6:]
-    simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, num=5)
+    simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, std_ratio=_std_ratio)
