@@ -309,18 +309,30 @@ class PPO(object):
 
     def SaveModel(self):
         self.model.save('../nn/current.pt')
-        self.muscle_model.save('../nn/current_muscle.pt')
+        if self.use_muscle:
+            self.muscle_model.save('../nn/current_muscle.pt')
+        if self.use_adaptive_sampling:
+            self.marginal_model.save('../nn/current_marginal.pt')
 
         if self.max_return_epoch == self.num_evaluation:
             self.model.save('../nn/max.pt')
-            self.muscle_model.save('../nn/max_muscle.pt')
+            if self.use_muscle:
+                self.muscle_model.save('../nn/max_muscle.pt')
+            if self.use_adaptive_sampling:
+                self.marginal_model.save('../nn/max_marginal.pt')
         if self.num_evaluation % 100 == 0:
             self.model.save('../nn/'+str(self.num_evaluation//100)+'.pt')
-            self.muscle_model.save('../nn/'+str(self.num_evaluation//100)+'_muscle.pt')
+            if self.use_muscle:
+                self.muscle_model.save('../nn/'+str(self.num_evaluation//100)+'_muscle.pt')
+            if self.use_adaptive_sampling:
+                self.marginal_model.save('../nn/'+str(self.num_evaluation//100)+'_marginal.pt')
 
     def LoadModel(self, path):
         self.model.load('../nn/'+path+'.pt')
-        self.muscle_model.load('../nn/'+path+'_muscle.pt')
+        if self.use_muscle:
+            self.muscle_model.load('../nn/'+path+'_muscle.pt')
+        if self.use_adaptive_sampling:
+            self.marginal_model.load('../nn/'+path+'_marginal.pt')
 
     def ComputeTDandGAE(self):
         self.replay_buffer.Clear()
