@@ -39,6 +39,8 @@ public:
 public:
 	void Step();
 	void Reset(bool RSI = true);
+    void Reset1();
+    void Reset2(bool RSI = true);
 	bool IsEndOfEpisode();
 	Eigen::VectorXd GetState();
 	void SetAction(const Eigen::VectorXd& a);
@@ -72,6 +74,7 @@ public:
     void SamplePushParams();
 	int GetMarginalStateNum();
 	void SetMarginalSampled(std::vector<Eigen::VectorXd> &_marginal_samples, std::vector<double> &_marginal_cumulative_probs);
+	bool IsWalkingParamChange(){return walking_param_change;}
 	std::tuple<int, double, double> GetWalkingParams();
 	std::tuple<double, double, double> GetNormalizedWalkingParams();
 	void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
@@ -79,6 +82,8 @@ public:
     void PrintPushParamsSampled();
 	void PrintWalkingParams();
 	void PrintWalkingParamsSampled();
+
+    void SetBvhStr(std::string &str);
 
 	void SetSampleStrategy(int flag);
 

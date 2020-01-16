@@ -147,6 +147,23 @@ GetMuscleTuples()
 	return all;
 }
 
+p::list
+EnvWrapper::
+GetWalkingParams() {
+    p::list param;
+    auto tp = mEnv->GetWalkingParams();
+    param.append(std::get<0>(tp));
+    param.append(std::get<1>(tp));
+    param.append(std::get<2>(tp));
+    return param;
+}
+void
+EnvWrapper::
+SetBvhStr(std::string str)
+{
+    mEnv->SetBvhStr(str);
+}
+
 np::ndarray
 EnvWrapper::
 SampleMarginalState()

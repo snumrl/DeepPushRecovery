@@ -4,7 +4,11 @@ import time
 import os
 import sys
 from datetime import datetime
+
 from multiprocessing import Process, Pipe
+from pushrecoverybvhgenerator import pBvhFileIO as bvf
+from pushrecoverybvhgenerator import pJointMotionEdit as jed
+from pushrecoverybvhgenerator import bvh_generator_server
 
 import collections
 from collections import namedtuple
@@ -111,16 +115,25 @@ def worker(meta_file, proc_num, state_sender, result_sender, action_receiver, re
 
     env = Env(meta_file, proc_num)
 
+    current_path = os.path.dirname(os.path.abspath(__file__)) + '/pushrecoverybvhgenerator'
+    origmot = bvf.readBvhFile_JointMotion(current_path+'/data/walk_simple.bvh', 1.)
+    jed.alignMotionToOrigin(origmot)
+
     state = None
     while True:
         reset_flag = reset_receiver.recv()
-        if reset_flag == 1:
-            env.Reset(True)
-            state = env.GetState()
-        elif reset_flag == 2:
+
+        if reset_flag == 2:
             marginal_sample = sample_receiver.recv()
             env.SetMarginalSampled(marginal_sample[0], marginal_sample[1])
-            env.Reset(True)
+
+        if reset_flag == 1 or reset_flag == 2:
+            env.Reset1()
+            if env.IsWalkingParamChange():
+                walking_param = env.GetWalkingParams()
+                bvh_str = bvh_generator_server.get_paramed_bvh_walk(origmot, walking_param[0], walking_param[1], walking_param[2], scale=1.)
+                env.SetBvhStr(bvh_str)
+            env.Reset2(True)
             state = env.GetState()
 
         state_sender.send(state)

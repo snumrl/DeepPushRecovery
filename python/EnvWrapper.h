@@ -24,6 +24,8 @@ public:
 
 	void Step();
 	void Reset(bool RSI);
+    void Reset1(){mEnv->Reset1();}
+    void Reset2(bool RSI){mEnv->Reset2(RSI);}
 	bool IsEndOfEpisode();
 	np::ndarray GetState();
 	void SetAction(np::ndarray np_array);
@@ -43,6 +45,10 @@ public:
 
     // for push experi
     bool HasCrouchVariation(){return mEnv->HasCrouchVariation();}
+
+    bool IsWalkingParamChange(){return mEnv->IsWalkingParamChange();}
+    p::list GetWalkingParams();
+    void SetBvhStr(std::string str);
 
     // for adaptive sampling
     double GetMarginalParameter(){return mEnv->GetMarginalParameter();}

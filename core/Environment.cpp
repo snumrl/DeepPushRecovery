@@ -354,25 +354,41 @@ Initialize()
     Reset(false);
     mNumState = GetState().rows();
 }
+
 void
 Environment::
-Reset(bool RSI)
-{
+Reset(bool RSI) {
+
+    this->Reset1();
+
+    if (walking_param_change) {
+        mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+    }
+
+    this->Reset2(RSI);
+}
+
+void
+Environment::
+Reset1() {
     mWorld->reset();
 
     mCharacter->GetSkeleton()->clearConstraintImpulses();
     mCharacter->GetSkeleton()->clearInternalForces();
     mCharacter->GetSkeleton()->clearExternalForces();
 
-
-    if(walking_param_change) {
+    if (walking_param_change) {
         if ((sample_param_type == MASS::ADAPTIVE) && marginal_set)
             SampleWalkingParamsFromMarginalSampled();
         else
             SampleWalkingParams();
-        mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
     }
+}
 
+void
+Environment::
+Reset2(bool RSI)
+{
     SamplePushParams();
 
     this->walk_fsm.reset();
@@ -956,6 +972,12 @@ PrintWalkingParams() {
     }
 }
 
+void
+Environment::
+SetBvhStr(std::string &str)
+{
+    this->GetCharacter()->GetBVH()->ParseStr(str);
+}
 
 void
 Environment::
