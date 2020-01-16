@@ -74,7 +74,10 @@ PushSim(const std::string &meta_file, const std::string& nn_path)
     p::exec("import torch.nn.functional as F",mns);
     p::exec("import torchvision.transforms as T",mns);
     p::exec("import numpy as np",mns);
-    p::exec("from Model import *",mns);
+    if(meta_file.find(std::string("depth3")) != std::string::npos)
+        p::exec("from Model_depth3 import *",mns);
+    else
+        p::exec("from Model import *",mns);
 
     mNNLoaded = true;
 
