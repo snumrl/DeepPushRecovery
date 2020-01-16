@@ -2,9 +2,9 @@
 #include "DARTHelper.h"
 
 EnvWrapper::
-EnvWrapper(std::string meta_file)
+EnvWrapper(std::string meta_file, int index)
 {
-    mEnv = new MASS::Environment(0);
+    mEnv = new MASS::Environment(index);
 	dart::math::seedRand();
 	mEnv->Initialize(meta_file);
 }
@@ -88,6 +88,22 @@ GetReward()
 	return mEnv->GetReward();
 }
 
+void
+EnvWrapper::
+Steps(int num)
+{
+    for(int j=0;j<num;j++)
+        mEnv->Step();
+}
+void
+EnvWrapper::
+StepsAtOnce()
+{
+    int num = this->GetNumSteps();
+    for(int j=0;j<num;j++)
+        mEnv->Step();
+}
+
 np::ndarray
 EnvWrapper::
 GetMuscleTorques()
@@ -129,6 +145,40 @@ GetMuscleTuples()
     tps.clear();
 
 	return all;
+}
+
+np::ndarray
+EnvWrapper::
+SampleMarginalState()
+{
+    double crouch_angle, stride_length, walking_speed;
+    mEnv->SampleWalkingParams();
+    std::tie(crouch_angle, stride_length, walking_speed) = mEnv->GetNormalizedWalkingParams();
+
+    if (mEnv->GetMarginalStateNum() == 4) {
+        Eigen::VectorXd marginal_state(4);
+        marginal_state << dart::math::random(0., 1.), crouch_angle, stride_length, walking_speed;
+
+        return toNumPyArray(marginal_state);
+    }
+    else {
+        Eigen::VectorXd marginal_state(3);
+        marginal_state << dart::math::random(0., 1.), stride_length, walking_speed;
+
+        return toNumPyArray(marginal_state);
+    }
+}
+
+void
+EnvWrapper::
+SetMarginalSampled(const np::ndarray &_marginal_samples, const p::list &_marginal_sample_cumulative_prob)
+{
+    std::vector<Eigen::VectorXd> marginal_samples = toEigenVectorVector(_marginal_samples);
+    std::vector<double> marginal_cumulative_probs(p::len(_marginal_sample_cumulative_prob));
+    for (int i=0; i < marginal_cumulative_probs.size(); i++)
+        marginal_cumulative_probs[i] = p::extract<double>(_marginal_sample_cumulative_prob[i]);
+
+    mEnv->SetMarginalSampled(marginal_samples, marginal_cumulative_probs);
 }
 
 int

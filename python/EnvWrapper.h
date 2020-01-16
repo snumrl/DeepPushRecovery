@@ -12,7 +12,7 @@ namespace np = boost::python::numpy;
 class EnvWrapper
 {
 public:
-	explicit EnvWrapper(std::string meta_file);
+	EnvWrapper(std::string meta_file, int index);
 	~EnvWrapper();
 
 	int GetNumState();
@@ -29,6 +29,9 @@ public:
 	void SetAction(np::ndarray np_array);
 	double GetReward();
 
+    void Steps(int num);
+    void StepsAtOnce();
+
 	//For Muscle Transitions
 	int GetNumTotalMuscleRelatedDofs();
 	int GetNumMuscles();
@@ -37,6 +40,16 @@ public:
 	void SetActivationLevels(np::ndarray np_array);
 	
 	p::list GetMuscleTuples();
+
+    // for push experi
+    bool HasCrouchVariation(){return mEnv->HasCrouchVariation();}
+
+    // for adaptive sampling
+    double GetMarginalParameter(){return mEnv->GetMarginalParameter();}
+    bool UseAdaptiveSampling(){return mEnv->GetUseAdaptiveSampling();}
+    int GetMarginalStateNum(){return mEnv->GetMarginalStateNum();}
+    np::ndarray SampleMarginalState();
+    void SetMarginalSampled(const np::ndarray &_marginal_samples, const p::list &_marginal_sample_cumulative_prob);
 
     // for push experiments
 	void SetWalkingParams(int crouch_angle, double stride_length, double walk_speed);
