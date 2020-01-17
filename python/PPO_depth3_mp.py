@@ -168,7 +168,7 @@ class PPO(object):
         self.num_control_Hz = self.env.GetControlHz()
         self.num_simulation_per_control = self.num_simulation_Hz // self.num_control_Hz
 
-        self.gamma = 0.99
+        self.gamma = 0.95
         self.lb = 0.99
 
         self.buffer_size = 8192
