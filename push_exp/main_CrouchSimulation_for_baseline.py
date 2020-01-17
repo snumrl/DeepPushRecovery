@@ -200,7 +200,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order, num=100, option_str='', trial_force=None, std_ratio=0.):
+def simulate(sim, launch_order, num=1000, option_str='', trial_force=None, std_ratio=0.):
     #=======================================================================
     # settings
     #=======================================================================
