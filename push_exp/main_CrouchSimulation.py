@@ -71,7 +71,7 @@ def gettimestringisoformat():
     return datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 
 
-def worker_simulation(sim, param):
+def worker_simulation(sim, param, csvfile):
     push_step, push_duration,\
                        crouch_angle, step_length_ratio, walk_speed_ratio, push_force, push_start_timing, crouch_label,\
                        weight, height, ith, q = param
@@ -154,13 +154,21 @@ def worker_simulation(sim, param):
         com_vel_z_foot_placement = 0.
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
+    csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
+        ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
+        start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
+        start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl,
+        step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps,
+        stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force,
+        foot_placement_x, foot_placement_y, com_vel_x_foot_placement, com_vel_y_foot_placement, com_vel_z_foot_placement))
+    csvfile.flush()
 
-    q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
-           start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
-           start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl,
-           step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps,
-           stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force,
-           foot_placement_x, foot_placement_y, com_vel_x_foot_placement, com_vel_y_foot_placement, com_vel_z_foot_placement))
+    # q.put((ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
+    #        start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
+    #        start_timing_time_fl, mid_timing_time_fl, start_timing_foot_fl, mid_timing_foot_fl,
+    #        step_length, walking_speed, halfcycle_duration, push_strength, push_start_timing, pushed_length, pushed_steps,
+    #        stopcode, step_length_ratio, halfcycle_duration_ratio, push_step, push_duration, push_force,
+    #        foot_placement_x, foot_placement_y, com_vel_x_foot_placement, com_vel_y_foot_placement, com_vel_z_foot_placement))
 
 
 def write_start(csvfilepath, exist=False):
@@ -506,8 +514,8 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     csvfile = write_start(csvfilepath, exist)
     for i in range(len(paramgroups)):
         for j in range(len(paramgroups[i])):
-            worker_simulation(sim, paramgroups[i][j])
-        write_body(q, csvfile)
+            worker_simulation(sim, paramgroups[i][j], csvfile)
+        # write_body(q, csvfile)
     write_end(csvfile)
 
     print()
@@ -578,7 +586,7 @@ if __name__ == '__main__':
         # simulate(sim, 1, trial_num, option)
         # simulate(sim, 2, trial_num, option)
         # simulate(sim, 3, trial_num, option)
-        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force)
+        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force, num=10000)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
-        simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, trial_force=_trial_force)
+        simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, trial_force=_trial_force, num=10000)
