@@ -477,7 +477,8 @@ if __name__ == '__main__':
     import sys
 
     option = sys.argv[1]
-    _std_ratio = float(sys.argv[2])
+    crouch = sys.argv[2]
+    _std_ratio = float(sys.argv[3])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/base/'
@@ -490,5 +491,5 @@ if __name__ == '__main__':
     meta_file = _metadata_dir + option + '.txt'
 
     _sim = PushSim(meta_file, nn_dir+'/max.pt')
-    crouch = re.findall(r'crouch\d+', option)[0][6:]
+    # crouch = re.findall(r'crouch\d+', option)[0][6:]
     simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, std_ratio=_std_ratio)
