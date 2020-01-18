@@ -286,6 +286,9 @@ simulatePrepare()
     this->info_start_time_backup = 0.;
     this->info_root_pos_backup.setZero();
 
+    this->pushed_prev_l_time = 10000.;
+    this->pushed_prev_r_time = 10001.;
+
     this->pushed_step_time = 0.;
     this->pushed_next_step_time = 0.;
 
@@ -456,6 +459,16 @@ void PushSim::_PushStep() {
     const double phase = std::fmod(current_time, half_cycle_duration);
     const int steps = (int) (current_time / half_cycle_duration) + 1;
     const double steps_double = current_time / half_cycle_duration + 1;
+
+    if ( steps_double >= 5.7 && pushed_prev_l_time > 100. &&
+            (IsBodyContact("TalusL") || IsBodyContact("FootThumbL") || IsBodyContact("FootPinkyL"))
+            )
+        pushed_prev_l_time = current_time;
+
+    if ( steps_double >= 6.7 && pushed_prev_r_time > 100. &&
+            (IsBodyContact("TalusR") || IsBodyContact("FootThumbR") || IsBodyContact("FootPinkyR"))
+            )
+        pushed_prev_r_time = current_time;
 
     if (steps_double >= 7.3 && info_right_foot_pos_with_toe_off.size() == 0 &&
         (!IsBodyContact("TalusR") && !IsBodyContact("FootThumbR") && !IsBodyContact("FootPinkyR"))
@@ -685,13 +698,15 @@ double
 PushSim::
 getStartTimingTimeIC(){
 //    (push_start_time - prev_foot_ic_time) / (swing_foot_ic_time - prev_foot_ic_time);
-    return 100.*(push_start_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    // return 100.*(push_start_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    return 100.*(push_start_time - pushed_step_time) / (pushed_prev_r_time - pushed_prev_l_time);
 }
 
 double
 PushSim::
 getMidTimingTimeIC(){
-    return 100.*(push_mid_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    // return 100.*(push_mid_time - pushed_step_time) / (pushed_next_step_time - pushed_step_time);
+    return 100.*(push_mid_time - pushed_step_time) / (pushed_prev_r_time - pushed_prev_l_time);
 }
 
 double

@@ -94,6 +94,9 @@ namespace MASS {
         double info_start_time_backup;
         Eigen::Vector3d info_root_pos_backup;
 
+        double pushed_prev_l_time;
+        double pushed_prev_r_time;
+
         double pushed_step_time;
         double pushed_next_step_time;
 
