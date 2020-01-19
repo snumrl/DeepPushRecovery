@@ -525,7 +525,7 @@ void PushSim::_PushStep() {
             else
                 info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
         }
-        if (steps >= 9) {
+        if (steps >= 9 && steps < 13) {
             Eigen::Vector3d root_pos_plane = GetBodyPosition("Pelvis");
             Eigen::Vector3d point_on_line = pushed_start_pos;
             point_on_line[1] = 0.;
