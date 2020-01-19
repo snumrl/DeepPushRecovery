@@ -237,6 +237,27 @@ GetActionFromNN()
     return action;
 }
 
+void
+PushSim::
+CheckPushedStep() {
+    this->pushed_step = 1;
+    if (pushed_length_array[3] > pushed_length_array[0]+0.035
+        && pushed_length_array[3] > pushed_length_array[1]
+        && pushed_length_array[3] > pushed_length_array[2])
+        this->pushed_step = 5;
+
+    else if (pushed_length_array[1]  > pushed_length_array[0]+0.035
+    && pushed_length_array[1] > pushed_length_array[2]
+       && pushed_length_array[1] > pushed_length_array[3])
+        this->pushed_step = 2;
+
+    else if (pushed_length_array[2]  > pushed_length_array[0]+0.035
+        && pushed_length_array[2] > pushed_length_array[1]
+        && pushed_length_array[2] > pushed_length_array[3])
+        this->pushed_step = 3;
+    this->pushed_length = pushed_length_array[this->pushed_step-1];
+}
+
 Eigen::VectorXd
 PushSim::
 GetActivationFromNN(const Eigen::VectorXd& mt)
@@ -305,6 +326,10 @@ simulatePrepare()
 
     this->pushed_step = 0;
     this->pushed_length = 0;
+    this->pushed_length_array[0] = 0.;
+    this->pushed_length_array[1] = 0.;
+    this->pushed_length_array[2] = 0.;
+    this->pushed_length_array[3] = 0.;
     this->valid = true;
     this->stopcode = 0;
 
@@ -525,23 +550,11 @@ void PushSim::_PushStep() {
             else
                 info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
         }
-        if (steps >= 9 && steps < 13) {
-            Eigen::Vector3d root_pos_plane = GetBodyPosition("Pelvis");
-            Eigen::Vector3d point_on_line = pushed_start_pos;
-            point_on_line[1] = 0.;
-            double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
-//            std::cout << steps << " " << detour_length << std::endl;
-            if (pushed_length+0.05 < detour_length || steps == 9) {
-                pushed_length = detour_length;
-                pushed_step = steps - 8;
-                max_detour_root_pos = GetBodyPosition("Pelvis");
-                max_detour_root_pos[1] = info_root_pos[1][1];
-                max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
-            }
-
-            if (pushed_step > 3) {
-                stopcode = 3;  // pushed, didn't falling down but distance is so far
-            }
+        if (steps == 13){
+            std::cout << "1 " << pushed_length_array[0] << std::endl;
+            std::cout << "2 " << pushed_length_array[1] << std::endl;
+            std::cout << "3 " << pushed_length_array[2] << std::endl;
+            std::cout << "4 " << pushed_length_array[3] << std::endl;
         }
     }
 
@@ -553,23 +566,22 @@ void PushSim::_PushStep() {
             pushed_start_foot_pos = GetBodyPosition("TalusR");
             pushed_start_toe_pos = GetBodyPosition("FootThumbR");
         }
-//        root_pos_plane[1] = 0.;
-//        Eigen::Vector3d point_on_line = pushed_start_pos;
-//        point_on_line[1] = 0.;
-//        double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
-//
-//        if (pushed_length < detour_length) {
-//            pushed_length = detour_length;
-//            pushed_step = steps - 8;
-//            max_detour_root_pos = GetBodyPosition("Pelvis");
-//            max_detour_root_pos[1] = info_root_pos[1][1];
-//            max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
-//        }
-//
-//        if(pushed_step > 3)
-//        {
-//            stopcode = 3;  // pushed, didn't falling down but distance is so far
-//        }
+        root_pos_plane[1] = 0.;
+        Eigen::Vector3d point_on_line = pushed_start_pos;
+        point_on_line[1] = 0.;
+        double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
+
+        if (pushed_length_array[steps-9>=0?steps-9:0] < detour_length) {
+            pushed_length_array[steps-9>=0?steps-9:0] = detour_length;
+            // pushed_step = steps - 8;
+            max_detour_root_pos = GetBodyPosition("Pelvis");
+            max_detour_root_pos[1] = info_root_pos[1][1];
+            max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
+        }
+
+        if (pushed_step > 3) {
+            stopcode = 3;  // pushed, didn't falling down but distance is so far
+        }
     }
 
     if (current_time >= push_mid_time && !pushed_mid) {
@@ -626,8 +638,11 @@ simulate(){
                 this->stopcode = 1; // falling down before push
             break;
         }
-
     }
+
+    if (this->valid)
+        CheckPushedStep();
+
     if (pushed_step == 0 && this->valid) {
         this->stopcode = 4;  // pushed but pushed distance is minus
         this->valid = false;

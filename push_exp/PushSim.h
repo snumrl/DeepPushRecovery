@@ -28,6 +28,8 @@ namespace MASS {
         void PushStep_old();
         void Reset(bool RSI = true);
 
+        void CheckPushedStep();
+
         Eigen::VectorXd GetActionFromNN();
         Eigen::VectorXd GetActivationFromNN(const Eigen::VectorXd &mt);
 
@@ -113,6 +115,7 @@ namespace MASS {
 
         int pushed_step;
         double pushed_length;
+        double pushed_length_array[4];
         bool valid;
         int stopcode;
 
