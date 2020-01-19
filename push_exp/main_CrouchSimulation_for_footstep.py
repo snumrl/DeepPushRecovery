@@ -239,24 +239,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         all_mean_crouch = [0, 20, 30, 60]
         
         mean_crouch = [all_mean_crouch[launch_order % len(all_mean_crouch)]]
-        if trial_force is None:
-            additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
-        elif trial_force == -6:
-            additional_str = '_{deg}deg__push_fix_length_speed_zeroforce'.format(deg=mean_crouch[0])
-        elif trial_force == -5:
-            additional_str = '_{deg}deg__push_fix_length_speed_force_weak'.format(deg=mean_crouch[0])
-        elif trial_force == -4:
-            additional_str = '_{deg}deg__push_fix_length_speed_timing_weak'.format(deg=mean_crouch[0])
-        elif trial_force == -3:
-            additional_str = '_{deg}deg__push_fix_length_speed_weak'.format(deg=mean_crouch[0])
-        elif trial_force == -2:
-            additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
-        elif trial_force == -1:
-            additional_str = '_{deg}deg__push_fix_length_speed_timing'.format(deg=mean_crouch[0])
-        elif trial_force == 0:
-            additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
-        else:
-            additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
 
         # if launch_order==0:
         #     param_opt_result = '130810_113234_0_60_push'
@@ -269,18 +251,6 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
     # set logger
     # =======================================================================
 
-    outDir = os.path.dirname(os.path.abspath(__file__)) + '/results/'
-
-    if not os.path.exists(outDir):
-        os.makedirs(outDir)
-
-    csvfilepaths = glob.glob(outDir + option_str + additional_str + '*.csv')
-    exist = False
-    if csvfilepaths:
-        csvfilepath = csvfilepaths[0]
-        exist = True
-    else:
-        csvfilepath = outDir + option_str + additional_str + '_' + gettimestringisoformat() + '.csv'
 
     print('start logging at', gettimestringisoformat())
     print()
@@ -513,6 +483,38 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
                        crouch_angle, step_length_ratio, walk_speed_ratio, push_force, push_start_timing, crouch_label,
                        weight, height, ith, q))
         ith += 1
+
+    outDir = os.path.dirname(os.path.abspath(__file__)) + '/results/'
+
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+
+    if trial_force is None:
+        additional_str = '_{deg}deg__push'.format(deg=mean_crouch[0])
+    elif trial_force == -6:
+        additional_str = '_{deg}deg__push_fix_length_speed_zeroforce'.format(deg=mean_crouch[0])
+    elif trial_force == -5:
+        additional_str = '_{deg}deg__push_fix_length_speed_force_weak'.format(deg=mean_crouch[0])
+    elif trial_force == -4:
+        additional_str = '_{deg}deg__push_fix_length_speed_timing_weak'.format(deg=mean_crouch[0])
+    elif trial_force == -3:
+        additional_str = '_{deg}deg__push_fix_length_speed_weak'.format(deg=mean_crouch[0])
+    elif trial_force == -2:
+        additional_str = '_{deg}deg__push_fix_length_speed_force'.format(deg=mean_crouch[0])
+    elif trial_force == -1:
+        additional_str = '_{deg}deg__push_fix_length_speed_'.format(deg=mean_crouch[0])+str(int(mean_timing))+'timing'
+    elif trial_force == 0:
+        additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
+    else:
+        additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
+
+    csvfilepaths = glob.glob(outDir + option_str + additional_str + '*.csv')
+    exist = False
+    if csvfilepaths:
+        csvfilepath = csvfilepaths[0]
+        exist = True
+    else:
+        csvfilepath = outDir + option_str + additional_str + '_' + gettimestringisoformat() + '.csv'
 
     csvfile = write_start(csvfilepath, exist)
     for i in range(len(paramgroups)):
