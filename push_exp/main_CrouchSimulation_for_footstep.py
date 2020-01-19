@@ -591,7 +591,12 @@ if __name__ == '__main__':
         # simulate(sim, 1, trial_num, option)
         # simulate(sim, 2, trial_num, option)
         # simulate(sim, 3, trial_num, option)
-        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force, num=400)
+        _num = 1000
+        if _trial_force == -1:
+            _num = 400
+        elif _trial_force == -6:
+            _num = 1
+        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force, num=_num)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
         simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, trial_force=_trial_force, num=10000)
