@@ -525,6 +525,24 @@ void PushSim::_PushStep() {
             else
                 info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
         }
+        if (steps >= 9) {
+            Eigen::Vector3d root_pos_plane = GetBodyPosition("Pelvis");
+            Eigen::Vector3d point_on_line = pushed_start_pos;
+            point_on_line[1] = 0.;
+            double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
+//            std::cout << steps << " " << detour_length << std::endl;
+            if (pushed_length+0.05 < detour_length || steps == 9) {
+                pushed_length = detour_length;
+                pushed_step = steps - 8;
+                max_detour_root_pos = GetBodyPosition("Pelvis");
+                max_detour_root_pos[1] = info_root_pos[1][1];
+                max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
+            }
+
+            if (pushed_step > 3) {
+                stopcode = 3;  // pushed, didn't falling down but distance is so far
+            }
+        }
     }
 
     if (current_time >= push_start_time && steps < 13) {
@@ -535,23 +553,23 @@ void PushSim::_PushStep() {
             pushed_start_foot_pos = GetBodyPosition("TalusR");
             pushed_start_toe_pos = GetBodyPosition("FootThumbR");
         }
-        root_pos_plane[1] = 0.;
-        Eigen::Vector3d point_on_line = pushed_start_pos;
-        point_on_line[1] = 0.;
-        double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
-
-        if (pushed_length < detour_length) {
-            pushed_length = detour_length;
-            pushed_step = steps - 8;
-            max_detour_root_pos = GetBodyPosition("Pelvis");
-            max_detour_root_pos[1] = info_root_pos[1][1];
-            max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
-        }
-
-        if(pushed_step > 3)
-        {
-            stopcode = 3;  // pushed, didn't falling down but distance is so far
-        }
+//        root_pos_plane[1] = 0.;
+//        Eigen::Vector3d point_on_line = pushed_start_pos;
+//        point_on_line[1] = 0.;
+//        double detour_length = calculate_distance_to_line(root_pos_plane, walking_dir, point_on_line, push_force_vec);
+//
+//        if (pushed_length < detour_length) {
+//            pushed_length = detour_length;
+//            pushed_step = steps - 8;
+//            max_detour_root_pos = GetBodyPosition("Pelvis");
+//            max_detour_root_pos[1] = info_root_pos[1][1];
+//            max_detour_on_line = pushed_start_pos + walking_dir.dot(root_pos_plane - point_on_line) * walking_dir;
+//        }
+//
+//        if(pushed_step > 3)
+//        {
+//            stopcode = 3;  // pushed, didn't falling down but distance is so far
+//        }
     }
 
     if (current_time >= push_mid_time && !pushed_mid) {
