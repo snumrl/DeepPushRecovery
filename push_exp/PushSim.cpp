@@ -550,12 +550,12 @@ void PushSim::_PushStep() {
             else
                 info_right_foot_pos.push_back(GetBodyPosition("TalusR"));
         }
-        if (steps == 13){
-            std::cout << "1 " << pushed_length_array[0] << std::endl;
-            std::cout << "2 " << pushed_length_array[1] << std::endl;
-            std::cout << "3 " << pushed_length_array[2] << std::endl;
-            std::cout << "4 " << pushed_length_array[3] << std::endl;
-        }
+//        if (steps == 13){
+//            std::cout << "1 " << pushed_length_array[0] << std::endl;
+//            std::cout << "2 " << pushed_length_array[1] << std::endl;
+//            std::cout << "3 " << pushed_length_array[2] << std::endl;
+//            std::cout << "4 " << pushed_length_array[3] << std::endl;
+//        }
     }
 
     if (current_time >= push_start_time && steps < 13) {
