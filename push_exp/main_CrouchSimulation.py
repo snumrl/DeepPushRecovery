@@ -254,7 +254,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
         elif trial_force == -1:
             additional_str = '_{deg}deg__push_fix_length_speed_timing'.format(deg=mean_crouch[0])
         elif trial_force == 0:
-            additional_str = '_{deg}deg__push_fix_length_speed'.format(deg=mean_crouch[0])
+            additional_str = '_{deg}deg__push_fix_length_speed_only'.format(deg=mean_crouch[0])
         else:
             additional_str = '_{deg}deg__push_{force}N'.format(deg=mean_crouch[0], force=trial_force)
 
