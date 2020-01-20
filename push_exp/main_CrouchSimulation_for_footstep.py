@@ -154,6 +154,7 @@ def worker_simulation(sim, param, csvfile):
         com_vel_z_foot_placement = 0.
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
+    print(stopcode, end='')
     csvfile.write('%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'%(
         ith, weight, height, distance, speed, force, stride, duration, crouch_angle, crouch_label,
         start_timing_time_ic, mid_timing_time_ic, start_timing_foot_ic, mid_timing_foot_ic,
@@ -207,7 +208,7 @@ def write_end(csvfile):
     csvfile.close()
 
 
-def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
+def simulate(sim, launch_order, num=100, option_str='', trial_force=None, std_ratio=0):
     #=======================================================================
     # settings
     #=======================================================================
@@ -377,7 +378,7 @@ def simulate(sim, launch_order, num=100, option_str='', trial_force=None):
             else:
                 test_params = np.vstack((test_params, np.random.multivariate_normal(mean, cov, num)))
     elif trial_force == -1:
-        mean_timing += 0 * std_timing
+        mean_timing += std_ratio * std_timing
         for i in range(len(mean_crouch)):
             mean =        [mean_crouch[i], mean_length_ratio,   mean_speed_ratio,   mean_force,   mean_timing,   mean_crouch[i]]
             cov = np.diag([0             , 0.               , 0.                , std_force**2, 0.           , 0])
@@ -566,8 +567,11 @@ if __name__ == '__main__':
     option = sys.argv[1]
     trial_angle = sys.argv[2]
     _trial_force = None
-    if len(sys.argv) == 4:
+    if len(sys.argv) >= 4:
         _trial_force = int(sys.argv[3])
+    _std_ratio = 0
+    if len(sys.argv) >= 5:
+        _std_ratio = int(sys.argv[4])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/don2/'
@@ -596,7 +600,7 @@ if __name__ == '__main__':
             _num = 400
         elif _trial_force == -6:
             _num = 1
-        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force, num=_num)
+        simulate(_sim, ['0', '20', '30', '60'].index(trial_angle), option_str=option, trial_force=_trial_force, num=_num, std_ratio=_std_ratio)
     else:
         crouch = re.findall(r'crouch\d+', option)[0][6:]
         simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, trial_force=_trial_force, num=10000)
