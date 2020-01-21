@@ -146,10 +146,23 @@ class SimulationNN(nn.Module):
 
     def load(self,path):
         print('load simulation nn {}'.format(path))
-        if torch.cuda.is_available():
-            self.load_state_dict(torch.load(path))
-        else:
-            self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        self.load_state_dict(torch.load(path))
+        # if torch.cuda.is_available():
+        #     self.load_state_dict(torch.load(path))
+        # else:
+        #     self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        # if 'push_both_sf_all_adaptive_k1_depth3' in path:
+        #     self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        # elif 'push_both_sf_all_uniform_depth3' in path:
+        #     self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        # elif 'nopush_sf_all_adaptive_k1_depth3' in path:
+        #     self.load_state_dict(torch.load(path))
+        # elif 'nopush_sf_all_uniform_depth3' in path:
+        #     self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        # if torch.cuda.is_available():
+        #     self.load_state_dict(torch.load(path))
+        # else:
+        #     self.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
 
     def save(self,path):
         print('save simulation nn {}'.format(path))
