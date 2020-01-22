@@ -36,6 +36,8 @@ private:
     void DrawDetourPerp();
     void DrawPush();
 
+    void AddBall();
+
 	void DrawMuscles(const std::vector<Muscle*>& muscles);
 	void DrawShadow(const Eigen::Vector3d& scale, const aiScene* mesh,double y);
 	void DrawAiMesh(const struct aiScene *sc, const struct aiNode* nd,const Eigen::Affine3d& M,double y);
@@ -55,6 +57,12 @@ private:
     int mBVHPlaying;
     std::vector<Eigen::Vector3d> mRootTrajectory;
 	std::vector<Eigen::Vector3d> mRightFootTrajectory;
+
+	std::vector<Eigen::VectorXd> human_pos_temp;
+    int human_pos_temp_idx;
+
+    std::vector<dart::dynamics::SkeletonPtr> balls;
+    std::vector<bool> balls_in_world;
 };
 };
 

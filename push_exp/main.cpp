@@ -15,9 +15,12 @@ int main(int argc,char** argv)
 	MASS::PushWindow* window = nullptr;
 	std::string metadata_name, pt_name, meta_file_path, nn_dir_path;
 	std::cout << "Please provide metadata name: ";
-	std::cin >> metadata_name;
+//	std::cin >> metadata_name;
+//metadata_name = std::string("torque_nopush_sf_crouch0_baseline_00std");
+    metadata_name = std::string("torque_push_both_sf_all_adaptive_k1_depth3");
     std::cout << "Please provide pt file prefix: ";
-    std::cin >> pt_name;
+//    std::cin >> pt_name;
+    pt_name = std::string("max");
 	meta_file_path = string(MASS_ROOT_DIR)+string("/data/metadata/")+metadata_name+string(".txt");
 	nn_dir_path = string(MASS_ROOT_DIR)+string("/nn/*/")+metadata_name+string("/")+pt_name+string("*.pt");
 
@@ -39,6 +42,7 @@ int main(int argc,char** argv)
     for(size_t i = 0; i < glob_result.gl_pathc; ++i) {
         filenames.emplace_back(glob_result.gl_pathv[i]);
     }
+
 
     // cleanup
     globfree(&glob_result);

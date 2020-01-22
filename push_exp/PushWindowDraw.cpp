@@ -36,7 +36,11 @@ draw()
     DrawPush();
     DrawMuscles(mEnv->GetCharacter()->GetMuscles());
     DrawSkeleton(mEnv->GetCharacter()->GetSkeleton());
-    DrawFootTrajectory();
+    // DrawFootTrajectory();
+
+    for (int i=0; i<balls.size();i++)
+        if (balls_in_world[i])
+            DrawSkeleton(balls[i]);
 
     // Eigen::Quaterniond q = mTrackBall.getCurrQuat();
     // q.x() = 0.0;
@@ -333,7 +337,7 @@ DrawTrajectory()
         glColor3f(0., 1., 0.);
         glBegin(GL_LINE_STRIP);
         for (auto &point : mRootTrajectory)
-            glVertex3f(point[0], point[1], point[2]);
+            glVertex3f(point[0], 0.01, point[2]);
         glEnd();
     }
     glEnable(GL_LIGHTING);
@@ -344,7 +348,7 @@ PushWindow::
 DrawFootTrajectory()
 {
     glDisable(GL_LIGHTING);
-    if (mRootTrajectory.size() > 1){
+    if (mRightFootTrajectory.size() > 1){
         glColor3f(1., 1., 0.);
         glBegin(GL_LINE_STRIP);
         for (auto &point : mRightFootTrajectory)
@@ -439,6 +443,15 @@ StepMotion()
     double dt = 1./mEnv->GetControlHz();
     Eigen::VectorXd p = mEnv->GetCharacter()->GetTargetPositions(t, 1./mEnv->GetControlHz());
     mEnv->GetCharacter()->GetSkeleton()->setPositions(p);
+//    if( human_pos_temp_idx < human_pos_temp.size())
+//        mEnv->GetCharacter()->GetSkeleton()->setPositions(human_pos_temp[human_pos_temp_idx++]);
     mEnv->GetCharacter()->GetSkeleton()->computeForwardKinematics(true,false,false);
     mEnv->GetWorld()->setTime(t + dt);
+//    auto pp = this->getPoseForBvh();
+//    std::ofstream fout;
+//    fout.open("hihihi.txt", std::ios::out | std::ios::app);
+//    for(int i=0; i<pp.rows(); i++)
+//        fout << pp[i] << " ";
+//    fout << std::endl;
+//    fout.close();
 }
