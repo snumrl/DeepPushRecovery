@@ -11,13 +11,10 @@ namespace np = boost::python::numpy;
 namespace MASS
 {
 class SimpleEnvironment;
-class Muscle;
-class Window : public dart::gui::Win3D
+class AppWindow : public dart::gui::Win3D
 {
 public:
-	Window(Environment* env);
-	Window(Environment* env,const std::string& nn_path);
-	Window(Environment* env,const std::string& nn_path,const std::string& muscle_nn_path);
+	AppWindow(SimpleEnvironment* env,const std::string& nn_path);
 
 	void draw() override;
 	void keyboard(unsigned char _key, int _x, int _y) override;
@@ -31,7 +28,6 @@ private:
 	void DrawShapeFrame(const dart::dynamics::ShapeFrame* shapeFrame);
 	void DrawShape(const dart::dynamics::Shape* shape,const Eigen::Vector4d& color);
 
-	void DrawMuscles(const std::vector<Muscle*>& muscles);
 	void DrawShadow(const Eigen::Vector3d& scale, const aiScene* mesh,double y);
 	void DrawAiMesh(const struct aiScene *sc, const struct aiNode* nd,const Eigen::Affine3d& M,double y);
 	void DrawGround(double y);
@@ -41,18 +37,20 @@ private:
 	void StepMotion();
 
 	Eigen::VectorXd GetActionFromNN();
-	Eigen::VectorXd GetActivationFromNN(const Eigen::VectorXd& mt);
 
-	p::object mm,mns,sys_module,nn_module,muscle_nn_module;
+	Eigen::VectorXd getPoseForBvh();
+	void SaveSkelMotion(const std::string& path);
 
+	std::vector<Eigen::VectorXd> motion;
 
-	Environment* mEnv;
+	p::object mm,mns,sys_module,nn_module;
+
+	SimpleEnvironment* mEnv;
 	bool mFocus;
 	bool mSimulating;
 	bool mDrawOBJ;
 	bool mDrawShadow;
 	bool mNNLoaded;
-	bool mMuscleNNLoaded;
 	Eigen::Affine3d mViewMatrix;
 
 	bool isCudaAvaliable;

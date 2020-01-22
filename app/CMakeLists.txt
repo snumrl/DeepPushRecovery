@@ -21,5 +21,5 @@ if(APPLE)
 endif(APPLE)
 
 file(GLOB srcs "*.h" "*.cpp")
-add_executable(render ${srcs})
-target_link_libraries(render ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenGL_gl_LIBRARY} ${OpenGL_glu_LIBRARY} ${GLUT_LIBRARIES} mss)
+add_executable(app ${srcs})
+target_link_libraries(app ${DART_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenGL_gl_LIBRARY} ${OpenGL_glu_LIBRARY} ${GLUT_LIBRARIES} mss)

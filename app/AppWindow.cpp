@@ -1,8 +1,7 @@
-#include "Window.h"
-#include "Environment.h"
+#include "AppWindow.h"
+#include "SimpleEnvironment.h"
 #include "Character.h"
 #include "BVH.h"
-#include "Muscle.h"
 #include <iostream>
 using namespace MASS;
 using namespace dart;
@@ -10,13 +9,10 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
 
-Window::
-Window(Environment* env)
-	:mEnv(env),mFocus(true),mSimulating(false),mDrawOBJ(false),mDrawShadow(true),mMuscleNNLoaded(false),
-	mBVHPlaying(false)
+AppWindow::
+AppWindow(SimpleEnvironment* env,const std::string& nn_path)
+	:mEnv(env),mFocus(true),mSimulating(false),mDrawOBJ(false),mDrawShadow(true),mBVHPlaying(false)
 {
-	mEnv->PrintWalkingParams();
-
 	mBackground[0] = 1.0;
 	mBackground[1] = 1.0;
 	mBackground[2] = 1.0;
@@ -38,13 +34,9 @@ Window(Environment* env)
 	p::exec("import torch.nn.functional as F",mns);
 	p::exec("import torchvision.transforms as T",mns);
 	p::exec("import numpy as np",mns);
-	p::exec("from Model import *",mns);
+	p::exec("from Model_depth3 import *",mns);
     isCudaAvaliable = p::extract<bool> (p::eval("torch.cuda.is_available()", mns));
-}
-Window::
-Window(Environment* env,const std::string& nn_path)
-	:Window(env)
-{
+
 	mNNLoaded = true;
 
 	boost::python::str str = ("num_state = "+std::to_string(mEnv->GetNumState())).c_str();
@@ -53,46 +45,15 @@ Window(Environment* env,const std::string& nn_path)
 	p::exec(str,mns);
 
 	nn_module = p::eval("SimulationNN(num_state,num_action)",mns);
+	p::object load = nn_module.attr("load");
+    load(nn_path);
 
-	if (isCudaAvaliable) {
-        p::object load = nn_module.attr("load");
-        load(nn_path);
-    }
-	else {
-	    p::object torch_load = p::eval(
-                (std::string("torch.load('") + nn_path + std::string("', map_location=torch.device('cpu'))")).c_str(),
-                 mns);
-	    nn_module.attr("load_state_dict")(torch_load);
-	}
+    motion.clear();
+
 }
-Window::
-Window(Environment* env,const std::string& nn_path,const std::string& muscle_nn_path)
-	:Window(env,nn_path)
-{
-	mMuscleNNLoaded = true;
 
-	boost::python::str str = ("num_total_muscle_related_dofs = "+std::to_string(mEnv->GetNumTotalRelatedDofs())).c_str();
-	p::exec(str,mns);
-	str = ("num_actions = "+std::to_string(mEnv->GetNumAction())).c_str();
-	p::exec(str,mns);
-	str = ("num_muscles = "+std::to_string(mEnv->GetCharacter()->GetMuscles().size())).c_str();
-	p::exec(str,mns);
-
-	muscle_nn_module = p::eval("MuscleNN(num_total_muscle_related_dofs,num_actions,num_muscles)",mns);
-
-    if (isCudaAvaliable) {
-        p::object load = muscle_nn_module.attr("load");
-        load(muscle_nn_path);
-    }
-    else {
-        p::object torch_load = p::eval(
-                (std::string("torch.load('") + muscle_nn_path + std::string("', map_location=torch.device('cpu'))")).c_str(),
-                mns);
-        muscle_nn_module.attr("load_state_dict")(torch_load);
-    }
-}
 void
-Window::
+AppWindow::
 draw()
 {	
 	GLfloat matrix[16];
@@ -110,18 +71,12 @@ draw()
 	float y = ground->getBodyNode(0)->getTransform().translation()[1] + dynamic_cast<const BoxShape*>(ground->getBodyNode(0)->getShapeNodesWith<dart::dynamics::VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
 	
 	DrawGround(y);
-	DrawMuscles(mEnv->GetCharacter()->GetMuscles());
 	DrawSkeleton(mEnv->GetCharacter()->GetSkeleton());
 
-	// Eigen::Quaterniond q = mTrackBall.getCurrQuat();
-	// q.x() = 0.0;
-	// q.z() = 0.0;
-	// q.normalize();
-	// mTrackBall.setQuaternion(q);
 	SetFocusing();
 }
 void
-Window::
+AppWindow::
 keyboard(unsigned char _key, int _x, int _y)
 {
 	switch (_key)
@@ -149,7 +104,7 @@ keyboard(unsigned char _key, int _x, int _y)
 
 }
 void
-Window::
+AppWindow::
 displayTimer(int _val)
 {
 	if(mSimulating)
@@ -160,7 +115,7 @@ displayTimer(int _val)
 	glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 void
-Window::
+AppWindow::
 StepMotion()
 {
     double t = mEnv->GetWorld()->getTime();
@@ -172,7 +127,7 @@ StepMotion()
 }
 
 void
-Window::
+AppWindow::
 Step()
 {	
 	int num = mEnv->GetSimulationHz()/mEnv->GetControlHz();
@@ -183,33 +138,19 @@ Step()
 		action = Eigen::VectorXd::Zero(mEnv->GetNumAction());
 	mEnv->SetAction(action);
 
-	if(mEnv->GetUseMuscle())
-	{
-		int inference_per_sim = 2;
-		for(int i=0;i<num;i+=inference_per_sim){
-			Eigen::VectorXd mt = mEnv->GetMuscleTorques();
-			mEnv->SetActivationLevels(GetActivationFromNN(mt));
-			for(int j=0;j<inference_per_sim;j++){
-                mEnv->Step();
-			}
-		}
-	}
-	else
-	{
-		for(int i=0;i<num;i++) {
-            mEnv->Step();
-        }
-	}
+	for(int i=0;i<num;i++) {
+        mEnv->Step();
+    }
+    motion.push_back(this->getPoseForBvh());
 }
 void
-Window::
+AppWindow::
 Reset(bool RSI)
 {
 	mEnv->Reset(RSI);
-	mEnv->PrintWalkingParamsSampled();
 }
 void
-Window::
+AppWindow::
 SetFocusing()
 {
 	if(mFocus)
@@ -222,7 +163,7 @@ SetFocusing()
 	}
 }
 
-np::ndarray toNumPyArray(const Eigen::VectorXd& vec)
+static np::ndarray toNumPyArray(const Eigen::VectorXd& vec)
 {
 	int n = vec.rows();
 	p::tuple shape = p::make_tuple(n);
@@ -240,7 +181,7 @@ np::ndarray toNumPyArray(const Eigen::VectorXd& vec)
 
 
 Eigen::VectorXd
-Window::
+AppWindow::
 GetActionFromNN()
 {
 	p::object get_action;
@@ -266,33 +207,9 @@ GetActionFromNN()
 	return action;
 }
 
-Eigen::VectorXd
-Window::
-GetActivationFromNN(const Eigen::VectorXd& mt)
-{
-	if(!mMuscleNNLoaded)
-	{
-		mEnv->GetDesiredTorques();
-		return Eigen::VectorXd::Zero(mEnv->GetCharacter()->GetMuscles().size());
-	}
-	p::object get_activation = muscle_nn_module.attr("get_activation");
-	Eigen::VectorXd dt = mEnv->GetDesiredTorques();
-	np::ndarray mt_np = toNumPyArray(mt);
-	np::ndarray dt_np = toNumPyArray(dt);
-
-	p::object temp = get_activation(mt_np,dt_np);
-	np::ndarray activation_np = np::from_object(temp);
-
-	Eigen::VectorXd activation(mEnv->GetCharacter()->GetMuscles().size());
-	float* srcs = reinterpret_cast<float*>(activation_np.get_data());
-	for(int i=0;i<activation.rows();i++)
-		activation[i] = srcs[i];
-
-	return activation;
-}
 
 void
-Window::
+AppWindow::
 DrawEntity(const Entity* entity)
 {
 	if (!entity)
@@ -312,7 +229,7 @@ DrawEntity(const Entity* entity)
 	}
 }
 void
-Window::
+AppWindow::
 DrawBodyNode(const BodyNode* bn)
 {	
 	if(!bn)
@@ -334,13 +251,13 @@ DrawBodyNode(const BodyNode* bn)
 
 }
 void
-Window::
+AppWindow::
 DrawSkeleton(const SkeletonPtr& skel)
 {
 	DrawBodyNode(skel->getRootBodyNode());
 }
 void
-Window::
+AppWindow::
 DrawShapeFrame(const ShapeFrame* sf)
 {
 	if(!sf)
@@ -361,7 +278,7 @@ DrawShapeFrame(const ShapeFrame* sf)
 	mRI->popMatrix();
 }
 void
-Window::
+AppWindow::
 DrawShape(const Shape* shape,const Eigen::Vector4d& color)
 {
 	if(!shape)
@@ -406,74 +323,9 @@ DrawShape(const Shape* shape,const Eigen::Vector4d& color)
 	
 	glDisable(GL_COLOR_MATERIAL);
 }
-void
-Window::
-DrawMuscles(const std::vector<Muscle*>& muscles)
-{
-	int count =0;
-	glEnable(GL_LIGHTING);
-	glEnable(GL_DEPTH_TEST);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_COLOR_MATERIAL);
-	
-	for(auto muscle : muscles)
-	{
-		auto aps = muscle->GetAnchors();
-		bool lower_body = true;
-		double a = muscle->activation;
-		// Eigen::Vector3d color(0.7*(3.0*a),0.2,0.7*(1.0-3.0*a));
-		Eigen::Vector4d color(0.4+(2.0*a),0.4,0.4,1.0);//0.7*(1.0-3.0*a));
-		// glColor3f(1.0,0.0,0.362);
-		// glColor3f(0.0,0.0,0.0);
-		mRI->setPenColor(color);
-		for(int i=0;i<aps.size();i++)
-		{
-			Eigen::Vector3d p = aps[i]->GetPoint();
-			mRI->pushMatrix();
-			mRI->translate(p);
-			mRI->drawSphere(0.005*sqrt(muscle->f0/1000.0));
-			mRI->popMatrix();
-		}
-			
-		for(int i=0;i<aps.size()-1;i++)
-		{
-			Eigen::Vector3d p = aps[i]->GetPoint();
-			Eigen::Vector3d p1 = aps[i+1]->GetPoint();
 
-			Eigen::Vector3d u(0,0,1);
-			Eigen::Vector3d v = p-p1;
-			Eigen::Vector3d mid = 0.5*(p+p1);
-			double len = v.norm();
-			v /= len;
-			Eigen::Isometry3d T;
-			T.setIdentity();
-			Eigen::Vector3d axis = u.cross(v);
-			axis.normalize();
-			double angle = acos(u.dot(v));
-			Eigen::Matrix3d w_bracket = Eigen::Matrix3d::Zero();
-			w_bracket(0, 1) = -axis(2);
-			w_bracket(1, 0) =  axis(2);
-			w_bracket(0, 2) =  axis(1);
-			w_bracket(2, 0) = -axis(1);
-			w_bracket(1, 2) = -axis(0);
-			w_bracket(2, 1) =  axis(0);
-
-			
-			Eigen::Matrix3d R = Eigen::Matrix3d::Identity()+(sin(angle))*w_bracket+(1.0-cos(angle))*w_bracket*w_bracket;
-			T.linear() = R;
-			T.translation() = mid;
-			mRI->pushMatrix();
-			mRI->transform(T);
-			mRI->drawCylinder(0.005*sqrt(muscle->f0/1000.0),len);
-			mRI->popMatrix();
-		}
-		
-	}
-	glEnable(GL_LIGHTING);
-	glDisable(GL_DEPTH_TEST);
-}
 void
-Window::
+AppWindow::
 DrawShadow(const Eigen::Vector3d& scale, const aiScene* mesh,double y) 
 {
 	glDisable(GL_LIGHTING);
@@ -502,7 +354,7 @@ DrawShadow(const Eigen::Vector3d& scale, const aiScene* mesh,double y)
 	glEnable(GL_LIGHTING);
 }
 void
-Window::
+AppWindow::
 DrawAiMesh(const struct aiScene *sc, const struct aiNode* nd,const Eigen::Affine3d& M,double y)
 {
 	unsigned int i;
@@ -555,7 +407,7 @@ DrawAiMesh(const struct aiScene *sc, const struct aiNode* nd,const Eigen::Affine
 
 }
 void
-Window::
+AppWindow::
 DrawGround(double y)
 {
 	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
@@ -580,4 +432,63 @@ DrawGround(double y)
 	}
 	glEnd();
 	glEnable(GL_LIGHTING);
+}
+
+
+Eigen::VectorXd
+AppWindow::
+getPoseForBvh()
+{
+    auto skeleton = mEnv->GetCharacter()->GetSkeleton();
+    auto &node_names = mEnv->GetCharacter()->GetBVH()->mNodeNames;
+    auto &node_map = mEnv->GetCharacter()->GetBVH()->mBVHToSkelMap;
+    int pose_idx = 0;
+    Eigen::VectorXd pose(3*node_names.size()+3);
+    pose.setZero();
+//    std::cout << node_names.size() << " " << node_map.size() << std::endl;
+//    for(int i=0; i<node_names.size(); i++)
+//    {
+//        std::cout << node_names[i] <<std::endl;
+//    }
+    for(int i=0; i<node_names.size(); i++)
+    {
+//        std::cout << i << " " << node_names[i] << std::endl;
+        if (node_map.find(node_names[i]) == node_map.end())
+        {
+            pose_idx += 3;
+        }
+        else {
+            auto joint = skeleton->getJoint(node_map[node_names[i]]);
+//            std::cout << joint->getName() << std::endl;
+            Eigen::VectorXd joint_position = joint->getPositions();
+//            std::cout << joint_position << std::endl;
+            if (i == 0) {
+                pose.head(3) = Eigen::Vector3d(0., 98.09, -3.08) + joint_position.segment(3, 3) * 100.;
+                pose.segment(3, 3) = joint_position.head(3);
+                pose_idx += 6;
+            } else {
+                if (joint->getNumDofs() == 1) {
+                    pose.segment(pose_idx, 3) = joint_position[0] * ((dart::dynamics::RevoluteJoint *) joint)->getAxis();
+                } else if (joint->getNumDofs() == 3) {
+                    pose.segment(pose_idx, 3) = joint_position;
+                }
+                pose_idx += 3;
+            }
+        }
+    }
+    return pose;
+}
+
+void
+AppWindow::
+SaveSkelMotion(const std::string& path) {
+	std::ofstream fout;
+	fout.open(path.c_str());
+	for(int i=0; i<motion.size();i++){
+		for(int j=0; j<motion[i].rows();j++){
+			fout << motion[i][j] << " ";
+		}
+		fout << std::endl;
+	}
+	fout.close();
 }
