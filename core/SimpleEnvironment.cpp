@@ -15,101 +15,54 @@ using namespace MASS;
 
 SimpleEnvironment::
 SimpleEnvironment()
-        :mControlHz(30),mSimulationHz(900),mWorld(std::make_shared<World>()),w_q(0.65),w_v(0.1),w_ee(0.15),w_com(0.1)
+        :mControlHz(30),mSimulationHz(600),mWorld(std::make_shared<World>()),w_q(0.75),w_v(0.1),w_ee(0.0),w_com(0.15)
 {
+    world_start_time = 0.;
+    bvh_start_time = 0.;
+
+    crouch_angle = 0;
+    crouch_angle_index = 0;
+    stride_length = 1.12620703;
+    walk_speed = 0.9943359644;
+
+    stride_length_mean_vec.clear();
+    stride_length_var_vec.clear();
+    walk_speed_mean_vec.clear();
+    walk_speed_var_vec.clear();
+
+    stride_length_mean_vec.push_back(1.12620703);
+    stride_length_mean_vec.push_back(0.9529737358);
+    stride_length_mean_vec.push_back(0.9158506655);
+    stride_length_mean_vec.push_back(0.8755451448);
+
+    walk_speed_mean_vec.push_back(0.994335964);
+    walk_speed_mean_vec.push_back(0.8080297151);
+    walk_speed_mean_vec.push_back(0.7880050552);
+    walk_speed_mean_vec.push_back(0.7435198328);
+
+    stride_length_var_vec.push_back(0.0323409929);
+    stride_length_var_vec.push_back(0.02508595114);
+    stride_length_var_vec.push_back(0.02772452640);
+    stride_length_var_vec.push_back(0.02817863267);
+
+    walk_speed_var_vec.push_back(0.0692930964);
+    walk_speed_var_vec.push_back(0.04421889347);
+    walk_speed_var_vec.push_back(0.04899931048);
+    walk_speed_var_vec.push_back(0.05194827755);
 }
 
 void
 SimpleEnvironment::
-Initialize(const std::string& meta_file,bool load_obj)
+Initialize()
 {
-    std::ifstream ifs(meta_file);
-    if(!(ifs.is_open()))
-    {
-        std::cout<<"Can't read file "<<meta_file<<std::endl;
-        return;
-    }
-    std::string str;
-    std::string index;
-    std::stringstream ss;
     MASS::Character* character = new MASS::Character();
-    while(!ifs.eof())
-    {
-        str.clear();
-        index.clear();
-        ss.clear();
-
-        std::getline(ifs,str);
-        ss.str(str);
-        ss>>index;
-        if(!index.compare("use_muscle"))
-        {
-            std::string str2;
-            ss>>str2;
-            if(!str2.compare("true"))
-                this->SetUseMuscle(true);
-            else
-                this->SetUseMuscle(false);
-        }
-        else if(!index.compare("con_hz")){
-            int hz;
-            ss>>hz;
-            this->SetControlHz(hz);
-        }
-        else if(!index.compare("sim_hz")){
-            int hz;
-            ss>>hz;
-            this->SetSimulationHz(hz);
-        }
-        else if(!index.compare("sim_hz")){
-            int hz;
-            ss>>hz;
-            this->SetSimulationHz(hz);
-        }
-        else if(!index.compare("skel_file")){
-            std::string str2;
-            ss>>str2;
-
-            character->LoadSkeleton(std::string(MASS_ROOT_DIR)+str2,load_obj);
-        }
-        else if(!index.compare("muscle_file")){
-            std::string str2;
-            ss>>str2;
-            if(this->GetUseMuscle())
-                character->LoadMuscles(std::string(MASS_ROOT_DIR)+str2);
-        }
-        else if(!index.compare("bvh_file")){
-            std::string str2,str3;
-
-            ss>>str2>>str3;
-            bool cyclic = false;
-            if(!str3.compare("true"))
-                cyclic = true;
-            character->LoadBVH(std::string(MASS_ROOT_DIR)+str2,cyclic);
-        }
-        else if(!index.compare("reward_param")){
-            double a,b,c,d;
-            ss>>a>>b>>c>>d;
-            this->SetRewardParameters(a,b,c,d);
-
-        }
-
-
-    }
-    ifs.close();
-
+    character->LoadSkeleton(std::string(MASS_ROOT_DIR)+std::string("/data/human.xml"), false);
 
     double kp = 300.0;
     character->SetPDParameters(kp,sqrt(2*kp));
     this->SetCharacter(character);
     this->SetGround(MASS::BuildFromFile(std::string(MASS_ROOT_DIR)+std::string("/data/ground.xml")));
 
-    this->Initialize();
-}
-void
-SimpleEnvironment::
-Initialize()
-{
     if(mCharacter->GetSkeleton()==nullptr){
         std::cout<<"Initialize character First"<<std::endl;
         exit(0);
@@ -131,6 +84,7 @@ Initialize()
     Reset(false);
     mNumState = GetState().rows();
 }
+
 void
 SimpleEnvironment::
 Reset(bool RSI)
@@ -141,16 +95,24 @@ Reset(bool RSI)
     mCharacter->GetSkeleton()->clearInternalForces();
     mCharacter->GetSkeleton()->clearExternalForces();
 
-    double t = 0.0;
+    crouch_angle = 0;
+    crouch_angle_index = 0;
+    stride_length = 1.12620703;
+    walk_speed = 0.9943359644;
 
-    if(RSI)
-        t = dart::math::random(0.0,mCharacter->GetBVH()->GetMaxTime()*0.9);
+    bvh_start_time = 0.;
+
+    mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+
+    double t = 0.2;
+
+    world_start_time = t;
     mWorld->setTime(t);
     mCharacter->Reset();
 
     mAction.setZero();
 
-    std::pair<Eigen::VectorXd,Eigen::VectorXd> pv = mCharacter->GetTargetPosAndVel(t,1.0/mControlHz);
+    std::pair<Eigen::VectorXd,Eigen::VectorXd> pv = mCharacter->GetTargetPosAndVel(t - bvh_start_time, 1.0/mControlHz);
     mTargetPositions = pv.first;
     mTargetVelocities = pv.second;
 
@@ -158,6 +120,7 @@ Reset(bool RSI)
     mCharacter->GetSkeleton()->setVelocities(mTargetVelocities);
     mCharacter->GetSkeleton()->computeForwardKinematics(true,false,false);
 }
+
 void
 SimpleEnvironment::
 Step()
@@ -180,15 +143,15 @@ GetDesiredTorques()
     mDesiredTorque = mCharacter->GetSPDForces(p_des);
     return mDesiredTorque.tail(mDesiredTorque.rows()-mRootJointDof);
 }
-double exp_of_squared(const Eigen::VectorXd& vec,double w)
+static double exp_of_squared(const Eigen::VectorXd& vec,double w)
 {
     return exp(-w*vec.squaredNorm());
 }
-double exp_of_squared(const Eigen::Vector3d& vec,double w)
+static double exp_of_squared(const Eigen::Vector3d& vec,double w)
 {
     return exp(-w*vec.squaredNorm());
 }
-double exp_of_squared(double val,double w)
+static double exp_of_squared(double val,double w)
 {
     return exp(-w*val*val);
 }
@@ -204,15 +167,16 @@ IsEndOfEpisode()
     Eigen::VectorXd v = mCharacter->GetSkeleton()->getVelocities();
 
     double root_y = mCharacter->GetSkeleton()->getBodyNode(0)->getTransform().translation()[1] - mGround->getRootBodyNode()->getCOM()[1];
-    if(root_y<1.3)
+    if(root_y < 0.9)
         isTerminal =true;
     else if (dart::math::isNan(p) || dart::math::isNan(v))
         isTerminal =true;
-    else if(mWorld->getTime()>10.0)
+    else if(mWorld->getTime() - world_start_time > 10.0)
         isTerminal =true;
 
     return isTerminal;
 }
+
 Eigen::VectorXd
 SimpleEnvironment::
 GetState()
@@ -234,16 +198,22 @@ GetState()
     v.tail<3>() = root->getCOMLinearVelocity();
 
     double t_phase = mCharacter->GetBVH()->GetMaxTime();
-    double phi = std::fmod(mWorld->getTime(),t_phase)/t_phase;
+    double phi = std::fmod(mWorld->getTime() - bvh_start_time, t_phase)/t_phase;
 
     p *= 0.8;
     v *= 0.2;
 
-    Eigen::VectorXd state(p.rows()+v.rows()+1);
+    double crouch_angle_normalized = sin(btRadians((double)crouch_angle)) * 2. / sqrt(3.);
+    double stride_length_normalized = (stride_length - stride_length_mean_vec[crouch_angle_index]) / sqrt(stride_length_var_vec[crouch_angle_index]);
+    double walk_speed_normalized = (walk_speed - walk_speed_mean_vec[crouch_angle_index]) / sqrt(walk_speed_var_vec[crouch_angle_index]);
 
-    state<<p,v,phi;
+    Eigen::VectorXd state(p.rows()+v.rows()+1+3);
+
+    state << p, v, phi, crouch_angle_normalized, stride_length_normalized, walk_speed_normalized;
+
     return state;
 }
+
 void
 SimpleEnvironment::
 SetAction(const Eigen::VectorXd& a)
@@ -252,14 +222,13 @@ SetAction(const Eigen::VectorXd& a)
 
     double t = mWorld->getTime();
 
-    std::pair<Eigen::VectorXd,Eigen::VectorXd> pv = mCharacter->GetTargetPosAndVel(t,1.0/mControlHz);
+    std::pair<Eigen::VectorXd,Eigen::VectorXd> pv = mCharacter->GetTargetPosAndVel(t - bvh_start_time, 1.0/mControlHz);
     mTargetPositions = pv.first;
     mTargetVelocities = pv.second;
 
     mSimCount = 0;
-    mRandomSampleIndex = rand()%(mSimulationHz/mControlHz);
-    mAverageActivationLevels.setZero();
 }
+
 double
 SimpleEnvironment::
 GetReward()
@@ -315,4 +284,25 @@ GetReward()
     double r = r_ee*(w_q*r_q + w_v*r_v);
 
     return r;
+}
+
+void
+SimpleEnvironment::
+SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed)
+{
+    double t_phase = mCharacter->GetBVH()->GetMaxTime();
+    double phi = std::fmod(mWorld->getTime() - bvh_start_time, t_phase)/t_phase;
+
+    crouch_angle = _crouch_angle;
+    stride_length = _stride_length;
+    walk_speed = _walk_speed;
+    
+    if (crouch_angle == 0) crouch_angle_index = 0;
+    else if (crouch_angle == 20) crouch_angle_index = 1;
+    else if (crouch_angle == 30) crouch_angle_index = 2;
+    else if (crouch_angle == 60) crouch_angle_index = 3;
+
+    mCharacter->GenerateBvhForPushExp(crouch_angle, stride_length, walk_speed);
+    t_phase = mCharacter->GetBVH()->GetMaxTime();
+    bvh_start_time = mWorld->getTime() - phi * t_phase;
 }

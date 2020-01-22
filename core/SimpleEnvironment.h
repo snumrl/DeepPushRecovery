@@ -13,7 +13,6 @@ namespace MASS
     public:
         SimpleEnvironment();
 
-        void SetUseMuscle(bool use_muscle){mUseMuscle = use_muscle;}
         void SetControlHz(int con_hz) {mControlHz = con_hz;}
         void SetSimulationHz(int sim_hz) {mSimulationHz = sim_hz;}
 
@@ -22,7 +21,6 @@ namespace MASS
 
         void SetRewardParameters(double w_q,double w_v,double w_ee,double w_com){this->w_q = w_q;this->w_v = w_v;this->w_ee = w_ee;this->w_com = w_com;}
         void Initialize();
-        void Initialize(const std::string& meta_file,bool load_obj = false);
     public:
         void Step();
         void Reset(bool RSI = true);
@@ -32,7 +30,6 @@ namespace MASS
         double GetReward();
 
         Eigen::VectorXd GetDesiredTorques();
-        Eigen::VectorXd GetMuscleTorques();
 
         const dart::simulation::WorldPtr& GetWorld(){return mWorld;}
         Character* GetCharacter(){return mCharacter;}
@@ -42,6 +39,7 @@ namespace MASS
         int GetNumState(){return mNumState;}
         int GetNumAction(){return mNumActiveDof;}
         int GetNumSteps(){return mSimulationHz/mControlHz;}
+        void SetWalkingParams(int _crouch_angle, double _stride_length, double _walk_speed);
     private:
         dart::simulation::WorldPtr mWorld;
         int mControlHz,mSimulationHz;
@@ -50,15 +48,28 @@ namespace MASS
         Eigen::VectorXd mAction;
         Eigen::VectorXd mTargetPositions,mTargetVelocities;
 
+        double world_start_time;
+        double bvh_start_time;
+
         int mNumState;
         int mNumActiveDof;
         int mRootJointDof;
 
         Eigen::VectorXd mDesiredTorque;
         int mSimCount;
-        int mRandomSampleIndex;
 
         double w_q,w_v,w_ee,w_com;
+
+        double phase; // for adaptive sampling
+        int crouch_angle;
+        int crouch_angle_index;
+        double stride_length;
+        double walk_speed;
+
+        std::vector<double> stride_length_mean_vec;
+        std::vector<double> stride_length_var_vec;
+        std::vector<double> walk_speed_mean_vec;
+        std::vector<double> walk_speed_var_vec;
     };
 };
 
