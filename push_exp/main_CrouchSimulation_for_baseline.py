@@ -492,4 +492,5 @@ if __name__ == '__main__':
 
     _sim = PushSim(meta_file, nn_dir+'/max.pt')
     # crouch = re.findall(r'crouch\d+', option)[0][6:]
-    simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, std_ratio=_std_ratio)
+    # simulate(_sim, ['0', '20', '30', '60'].index(crouch), option_str=option, std_ratio=_std_ratio)
+    simulate(_sim, 0, option_str=option, std_ratio=_std_ratio)
