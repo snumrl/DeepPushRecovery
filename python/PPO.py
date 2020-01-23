@@ -154,6 +154,8 @@ class PPO(object):
         self.marginal_model = MarginalNN(self.marginal_state_num)
         self.marginal_value_avg = 1.
         self.marginal_learning_rate = 1e-3
+        if use_cuda:
+            self.marginal_model.cuda()
         self.marginal_optimizer = optim.SGD(self.marginal_model.parameters(), lr=self.marginal_learning_rate)
         self.marginal_loss = 0.0
         self.marginal_samples = []
@@ -161,8 +163,6 @@ class PPO(object):
         self.marginal_k = self.env.GetMarginalParameter()
         self.mcmc_burn_in = 1000
         self.mcmc_period = 20
-        if use_cuda:
-            self.marginal_model.cuda()
 
         self.total_episodes = []
         self.episodes = [None]*self.num_slaves
