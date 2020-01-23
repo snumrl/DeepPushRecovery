@@ -94,6 +94,7 @@ PushSim(const std::string &meta_file, const std::string& nn_path)
 
     p::object load = nn_module.attr("load");
     load(nn_path);
+    nn_module.attr("eval")();
 
     this->push_step = 8;
     this->push_duration = .2;
