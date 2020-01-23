@@ -476,9 +476,11 @@ if __name__ == '__main__':
 
     import sys
 
+    # option = sys.argv[1]
+    # crouch = sys.argv[2]
+    # _std_ratio = float(sys.argv[3])
     option = sys.argv[1]
-    crouch = sys.argv[2]
-    _std_ratio = float(sys.argv[3])
+    _std_ratio = float(sys.argv[2])
 
     _metadata_dir = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/'
     _nn_finding_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/base/'
