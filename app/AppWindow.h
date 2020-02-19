@@ -35,11 +35,14 @@ private:
 	void Reset(bool RSI=true);
 
 	void StepMotion();
+    void AddBodyExtForce(const std::string &name, const Eigen::Vector3d &_force);
+    double GetSimulationTime();
 
 	Eigen::VectorXd GetActionFromNN();
 
 	Eigen::VectorXd getPoseForBvh();
 	void SaveSkelMotion(const std::string& path);
+	Eigen::Vector3d GetBodyPosition(const std::string &name);
 
 	std::vector<Eigen::VectorXd> motion;
 
@@ -55,6 +58,17 @@ private:
 
 	bool isCudaAvaliable;
     int mBVHPlaying;
+
+    std::vector<int> push_start_frame;
+    std::vector<int> push_end_frame;
+    int push_frame_index;
+    double push_start_time;
+    double push_end_time;
+    double push_force;
+    Eigen::Vector3d push_force_vec;
+    bool push_forced;
+
+    std::vector<int> param_change_frame;
 };
 };
 

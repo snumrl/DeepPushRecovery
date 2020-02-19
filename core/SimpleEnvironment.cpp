@@ -61,7 +61,7 @@ Initialize()
     double kp = 300.0;
     character->SetPDParameters(kp,sqrt(2*kp));
     this->SetCharacter(character);
-    this->SetGround(MASS::BuildFromFile(std::string(MASS_ROOT_DIR)+std::string("/data/ground.xml")));
+    this->SetGround(MASS::BuildFromFile(std::string(MASS_ROOT_DIR)+std::string("/data/ground_app.xml")));
 
     if(mCharacter->GetSkeleton()==nullptr){
         std::cout<<"Initialize character First"<<std::endl;

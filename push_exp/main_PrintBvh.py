@@ -22,21 +22,20 @@ def getMotionFromMotionSkel(_motion_skel):
     return _motion
 
 
-if __name__ != '__main__':
+if __name__ == '__main__':
     # for stand push
     path_prefix = '/Users/trif/works/ProjectPushRecovery/result_motion/'
-    filename = 'hihihi.txt'
+    filename = 'interactive_result/figure_bvh.txt'
     skel_motion = []
-    with open(filename, 'r') as f:
+    with open(path_prefix + filename, 'r') as f:
         s = f.readline()
         while s != '':
             skel_motion.append(list(map(float, s.split())))
             s = f.readline()
-    print(len(skel_motion[0]))
 
     motion_ref = getMotionFromMotionSkel(skel_motion)
 
-    filename_ref = 'human_capture.bvh'
+    filename_ref = 'interactive_result/figure.bvh'
 
     with open(path_prefix+filename_ref, 'w') as fout:
         with open(os.path.dirname(os.path.abspath(__file__)) + '/../data/motion/bvh_base.bvh', 'r') as f_base:
@@ -47,7 +46,7 @@ if __name__ != '__main__':
         for i in range(len(motion_ref)):
             fout.write(' '.join(list(map(str, motion_ref[i]))) + '\n')
 
-if __name__ == '__main__':
+if __name__ == '__main__' and False:
     import sys
     import re
 
@@ -59,7 +58,9 @@ if __name__ == '__main__':
     else:
         trial_angle = str(0)
         # option = 'torque_push_both_sf_all_adaptive_k1_depth3'
-        option = 'torque_nopush_sf_all_adaptive_k1_depth3'
+        # option = 'torque_nopush_sf_all_adaptive_k1_depth3'
+        # option = 'torque_push_both_sf_all_uniform_depth3'
+        option = 'torque_nopush_sf_all_uniform_depth3'
 
     push_step = 8
     push_duration = 0.2

@@ -47,9 +47,30 @@ AppWindow(SimpleEnvironment* env,const std::string& nn_path)
 	nn_module = p::eval("SimulationNN(num_state,num_action)",mns);
 	p::object load = nn_module.attr("load");
     load(nn_path);
+    nn_module.attr("eval")();
 
     motion.clear();
 
+    push_start_frame.clear();
+    push_end_frame.clear();
+
+    push_start_frame.push_back(100000);
+    push_start_frame.push_back(100000);
+    push_start_frame.push_back(100000);
+    push_start_frame.push_back(100000);
+    push_end_frame.push_back(-1);
+    push_end_frame.push_back(-1);
+    push_end_frame.push_back(-1);
+    push_end_frame.push_back(-1);
+
+    push_start_time = 10000.;
+    push_end_time = 10001.;
+    push_force = 0.;
+    push_force_vec << 1., 0., 0.;
+    push_frame_index = 0;
+
+    param_change_frame.clear();
+    push_forced = false;
 }
 
 void
@@ -70,8 +91,23 @@ draw()
 	auto ground = mEnv->GetGround();
 	float y = ground->getBodyNode(0)->getTransform().translation()[1] + dynamic_cast<const BoxShape*>(ground->getBodyNode(0)->getShapeNodesWith<dart::dynamics::VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
 	
-	DrawGround(y);
+	DrawGround(y+0.001);
 	DrawSkeleton(mEnv->GetCharacter()->GetSkeleton());
+    DrawSkeleton(mEnv->GetGround());
+    if (push_forced)
+    {
+        Eigen::Vector3d pushed_body_pos = this->GetBodyPosition("Torso");
+        Eigen::Vector3d push_start_pos = pushed_body_pos - push_force * push_force_vec/50.;
+        glDisable(GL_LIGHTING);
+        glColor3f(1., 0., 1.);
+        glBegin(GL_LINES);
+        glVertex3f(pushed_body_pos[0], pushed_body_pos[1], pushed_body_pos[2]);
+        glVertex3f(push_start_pos[0], push_start_pos[1], push_start_pos[2]);
+        glEnd();
+        glEnable(GL_LIGHTING);
+    }
+
+
 
 	SetFocusing();
 }
@@ -86,17 +122,31 @@ keyboard(unsigned char _key, int _x, int _y)
 	case 'r': this->Reset();break;
 	case ' ': mSimulating = !mSimulating;break;
 	case 'o': mDrawOBJ = !mDrawOBJ;break;
-
-	case 'R': this->Reset(false);break;
+	case 'n':
+	    mSimulating = false;
+        push_start_time = this->GetSimulationTime();
+        push_end_time = this->GetSimulationTime() + 0.2;
+	    push_force += 50;
+	    if(push_force == 200)
+	        push_force += 20;
+	    push_force_vec = -push_force_vec;
+        mSimulating = true;
+	    break;
     case 'S': this->StepMotion();break;
 	case 'p': mBVHPlaying = !mBVHPlaying;break;
 	case 'm':
+        mSimulating = false;
 	    int a;
 	    double b, c;
 	    std::cin >> a >> b >> c;
-	    mEnv->SetWalkingParams(a, b, c);
+        param_change_frame.push_back(this->motion.size());
+        mEnv->SetWalkingParams(a, b, c);
+        mSimulating = true;
 	    break;
-
+    case 'w':
+        mSimulating = false;
+        this->SaveSkelMotion("/Users/trif/works/ProjectPushRecovery/result_motion/interactive_result");
+        break;
 	case 27 : exit(0);break;
 	default:
 		Win3D::keyboard(_key,_x,_y);break;
@@ -137,8 +187,59 @@ Step()
 	else
 		action = Eigen::VectorXd::Zero(mEnv->GetNumAction());
 	mEnv->SetAction(action);
+//	int frame = motion.size()-83;
+//	if (frame == 52){
+//	    mEnv->SetWalkingParams(60, 0.7, 0.7);
+//        param_change_frame.push_back(this->motion.size());
+//    }
+//    if (frame == 251) {
+//        mEnv->SetWalkingParams(30, 0.75, 0.75);
+//        param_change_frame.push_back(this->motion.size());
+//    }
+//    if (frame == 300) {
+//        mEnv->SetWalkingParams(20, 0.85, 0.85);
+//        param_change_frame.push_back(this->motion.size());
+//    }
+//    if (frame == 512) {
+//        mEnv->SetWalkingParams(0, 0.85, 0.75);
+//        param_change_frame.push_back(this->motion.size());
+//    }
+//    if (frame == 651) {
+//        mEnv->SetWalkingParams(0, 1.4, 1.6);
+//        param_change_frame.push_back(this->motion.size());
+//    }
+//    if (frame == 362)
+//        this->keyboard('n', 0, 0);
+//    if (frame == 400)
+//        this->keyboard('n', 0, 0);
+//    if (frame == 437)
+//        this->keyboard('n', 0, 0);
+//    if (frame == 816)
+//        this->keyboard('n', 0, 0);
+	int frame = motion.size();
+	if (frame == 52){
+	    mEnv->SetWalkingParams(60, 0.7, 0.7);
+        param_change_frame.push_back(this->motion.size());
+    }
+    if (frame == 112) {
+        mEnv->SetWalkingParams(0, 1.3, 1.3);
+        param_change_frame.push_back(this->motion.size());
+    }
 
 	for(int i=0;i<num;i++) {
+        if(this->push_start_time <= this->GetSimulationTime() && this->GetSimulationTime() <= this->push_end_time) {
+            this->AddBodyExtForce("ArmL", push_force * this->push_force_vec);
+            push_forced = true;
+            if (push_start_frame[push_frame_index] == 100000)
+                push_start_frame[push_frame_index] = this->motion.size();
+        }
+        else{
+            push_forced = false;
+            if (push_start_frame[push_frame_index] != 100000 && push_end_frame[push_frame_index] == -1) {
+                push_end_frame[push_frame_index] = this->motion.size();
+                push_frame_index++;
+            }
+        }
         mEnv->Step();
     }
     motion.push_back(this->getPoseForBvh());
@@ -148,6 +249,7 @@ AppWindow::
 Reset(bool RSI)
 {
 	mEnv->Reset(RSI);
+	motion.clear();
 }
 void
 AppWindow::
@@ -483,7 +585,10 @@ void
 AppWindow::
 SaveSkelMotion(const std::string& path) {
 	std::ofstream fout;
-	fout.open(path.c_str());
+	std::string file_prefix;
+	std::cout << "Please provide save file prefix: ";
+	std::cin >> file_prefix;
+	fout.open(path + std::string("/") + file_prefix+std::string("_bvh.txt"));
 	for(int i=0; i<motion.size();i++){
 		for(int j=0; j<motion[i].rows();j++){
 			fout << motion[i][j] << " ";
@@ -491,4 +596,40 @@ SaveSkelMotion(const std::string& path) {
 		fout << std::endl;
 	}
 	fout.close();
+
+    fout.open(path + std::string("/") + file_prefix + std::string("_frames.txt"));
+    fout << "param_change_frame ";
+    for (int i=0; i<param_change_frame.size();i++)
+        fout << param_change_frame[i] << " ";
+    fout << std::endl;
+    fout << "push_start_frame ";
+    for (int i=0; i<push_start_frame.size();i++)
+        fout << push_start_frame[i] << " ";
+    fout << std::endl;
+    fout << "push_end_frame ";
+    for (int i=0; i<push_end_frame.size();i++)
+        fout << push_end_frame[i] << " ";
+    fout << std::endl;
+    fout.close();
+}
+
+void
+AppWindow::
+AddBodyExtForce(const std::string &name, const Eigen::Vector3d &_force)
+{
+    mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)->addExtForce(_force);
+}
+
+double
+AppWindow::
+GetSimulationTime()
+{
+    return mEnv->GetWorld()->getTime();
+}
+
+Eigen::Vector3d
+AppWindow::
+GetBodyPosition(const std::string &name)
+{
+    return mEnv->GetCharacter()->GetSkeleton()->getBodyNode(name)->getTransform().translation();
 }

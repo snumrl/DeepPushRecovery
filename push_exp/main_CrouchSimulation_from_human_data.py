@@ -142,16 +142,16 @@ def worker_simulation(sim, param):
         foot_placement_x = -foot_diff[0]
         foot_placement_y = foot_diff[2]
 
-        com_vel_foot_placement = sim.getCOMVelocityFootPlacement()
-        com_vel_x_foot_placement = -com_vel_foot_placement[0]
-        com_vel_y_foot_placement = com_vel_foot_placement[2]
-        com_vel_z_foot_placement = com_vel_foot_placement[1]
+        #com_vel_foot_placement = sim.getCOMVelocityFootPlacement()
+        #com_vel_x_foot_placement = -com_vel_foot_placement[0]
+        #com_vel_y_foot_placement = com_vel_foot_placement[2]
+        #com_vel_z_foot_placement = com_vel_foot_placement[1]
     else:
         foot_placement_x = 0.
         foot_placement_y = 0.
-        com_vel_x_foot_placement = 0.
-        com_vel_y_foot_placement = 0.
-        com_vel_z_foot_placement = 0.
+    com_vel_x_foot_placement = 0.
+    com_vel_y_foot_placement = 0.
+    com_vel_z_foot_placement = 0.
 
     halfcycle_duration_ratio = step_length_ratio / walk_speed_ratio
 
@@ -191,7 +191,7 @@ def write_body(q, csvfile):
                         foot_placement_x, foot_placement_y, com_vel_x_foot_placement, com_vel_y_foot_placement, com_vel_z_foot_placement))
             csvfile.flush()
         except:
-            print('write error!')
+            # print('write error!')
             break
 
 
@@ -439,8 +439,13 @@ if __name__ == '__main__':
     import re
     
     q = mp.Manager().Queue()
+    # option = 'torque_push_both_sf_crouch0_adaptive_k1'
+    option = sys.argv[1]
+    meta_file = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/' + option + '.txt'
+    nn_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/done/'+option
+    _sim = PushSim(meta_file, nn_dir+'/max.pt')
 
-    fout = write_start('like_human-data.csv')
+    fout = write_start('like_human-data_'+option+'.csv')
 
     with open(os.path.dirname(os.path.abspath(__file__)) + '/../data/human_data/human-data.csv', 'r') as csv_f:
         reader = csv.reader(csv_f)
@@ -479,16 +484,16 @@ if __name__ == '__main__':
             else:
                 crouch = '60'
 
+            if not('crouch'+crouch in option):
+                continue
+
             stride = float(line[stride_idx]) / 1000.
             speed = float(line[speed_idx]) / 1000.
-            force = float(line[force_idx])
+            force = float(line[force_idx]) / 1000.
             push_start = float(line[push_start_idx])
             push_duration = float(line[push_duration_idx])
+            push_step = 8
 
-            option = 'torque_push_both_sf_crouch'+crouch+'_adaptive_k1'
-            meta_file = os.path.dirname(os.path.abspath(__file__)) + '/../data/metadata/' + option + '.txt'
-            nn_dir = os.path.dirname(os.path.abspath(__file__)) + '/../nn/done/'+option
-            _sim = PushSim(meta_file, nn_dir+'/max.pt')
 
             crouch_angle                = int(crouch)
             step_length_ratio           = stride / 1.1886
@@ -498,7 +503,7 @@ if __name__ == '__main__':
             crouch_label                = int(crouch)
             weight = 72.
             height = 170.
-            ith = int(line[0][:7])
+            ith = int(line[0][7:])
             param = (push_step, push_duration,
                            crouch_angle, step_length_ratio, walk_speed_ratio, push_force, push_start_timing, crouch_label,
                            weight, height, ith, q)

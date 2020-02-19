@@ -16,6 +16,7 @@ Window(Environment* env)
 	mBVHPlaying(false)
 {
 	mEnv->PrintWalkingParams();
+	mEnv->SetPushEnable(false);
 
 	mBackground[0] = 1.0;
 	mBackground[1] = 1.0;

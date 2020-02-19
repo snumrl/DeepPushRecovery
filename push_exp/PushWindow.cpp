@@ -156,11 +156,11 @@ void PushWindow::keyboard(unsigned char _key, int _x, int _y) {
 
     case ' ':
         ///////////////////////////////////
-//        mEnv->SetWalkingParams(30, 0.9158506655, 0.7880050552);
+        mEnv->SetWalkingParams(30, 0.9158506655, 0.7880050552);
 //        mEnv->SetWalkingParams(30, 0.66609, 0.456);
 //          mEnv->SetWalkingParams(30, 1.2488643372914146, 1.2307208126787688);
 //        mEnv->SetWalkingParams(0, 1.1818643660084964,1.1818643660084964/0.9182594956257297);
-        mEnv->SetWalkingParams(0, 1.12620703, 0.994335964);
+//        mEnv->SetWalkingParams(0, 1.12620703, 0.994335964);
         ///////////////////////////////////
         this->Reset(false);
         mRootTrajectory.clear();
